@@ -1,4 +1,5 @@
-import { Phone, Mail, MapPin } from 'lucide-react';
+import { Phone, Mail, MapPin, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const WHATSAPP_URL = 'https://api.whatsapp.com/send/?phone=%2B598096303705&text&type=phone_number&app_absent=0';
 
@@ -24,13 +25,13 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-4">Navegación</h4>
             <ul className="space-y-2">
-              {['Inicio', 'Nosotros', 'Servicios', 'Contacto'].map((item) => (
+              {['Inicio', 'Nosotros', 'Galeria', 'Servicios', 'Contacto'].map((item) => (
                 <li key={item}>
                   <a
                     href={`#${item.toLowerCase()}`}
                     className="text-muted-foreground hover:text-primary transition-colors text-sm"
                   >
-                    {item}
+                    {item === 'Galeria' ? 'Galería' : item}
                   </a>
                 </li>
               ))}
@@ -74,9 +75,18 @@ export const Footer = () => {
           <p className="text-muted-foreground text-sm text-center md:text-left">
             © {currentYear} Urbana Eventos – Gestión de salones y eventos
           </p>
-          <p className="text-muted-foreground text-xs">
-            Diseñado para conectarte con el evento perfecto
-          </p>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/admin"
+              className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors text-xs"
+            >
+              <Settings className="w-3 h-3" />
+              Admin
+            </Link>
+            <p className="text-muted-foreground text-xs">
+              Diseñado para conectarte con el evento perfecto
+            </p>
+          </div>
         </div>
       </div>
     </footer>

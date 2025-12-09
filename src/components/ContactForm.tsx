@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Send, MessageCircle } from 'lucide-react';
 import { EventType, eventTypes } from './ServicesSection';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContactFormProps {
   selectedEventType: EventType | null;
@@ -11,6 +12,7 @@ const WHATSAPP_NUMBER = '+598096303705';
 const WHATSAPP_BASE_URL = `https://api.whatsapp.com/send/?phone=${encodeURIComponent(WHATSAPP_NUMBER)}&type=phone_number&app_absent=0`;
 
 export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
@@ -34,7 +36,7 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -47,33 +49,73 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
       return;
     }
 
-    // Build WhatsApp message
-    const message = `Hola, soy ${formData.nombre}. Quiero organizar un *${formData.tipoEvento}* para ${formData.invitados || 'cantidad a definir'} personas, el ${formData.fecha || 'fecha a definir'}. Mis datos de contacto son ${formData.telefono} / ${formData.email}. ${formData.mensaje ? `Mensaje adicional: ${formData.mensaje}` : ''}`;
+    setIsSubmitting(true);
 
-    const whatsappUrl = `${WHATSAPP_BASE_URL}&text=${encodeURIComponent(message)}`;
-
-    // Track conversion - Google Ads placeholder
-    /* <!-- GOOGLE TAG CONVERSIÓN FORMULARIO -->
-     * gtag('event', 'conversion', {
-     *   'send_to': 'AW-XXXXXXXXXX/YYYYYYYYYYY',
-     *   'event_category': 'lead',
-     *   'event_label': formData.tipoEvento,
-     * });
-     */
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'conversion', {
-        event_category: 'lead',
-        event_label: formData.tipoEvento,
+    try {
+      // Save lead to database
+      const { error } = await supabase.from('leads').insert({
+        nombre: formData.nombre,
+        email: formData.email,
+        telefono: formData.telefono,
+        tipo_evento: formData.tipoEvento,
+        invitados: formData.invitados || null,
+        fecha_evento: formData.fecha || null,
+        mensaje: formData.mensaje || null,
       });
+
+      if (error) {
+        console.error('Error saving lead:', error);
+        // Continue anyway - we still want to open WhatsApp
+      }
+
+      // Build WhatsApp message
+      const message = `Hola, soy ${formData.nombre}. Quiero organizar un *${formData.tipoEvento}* para ${formData.invitados || 'cantidad a definir'} personas, el ${formData.fecha || 'fecha a definir'}. Mis datos de contacto son ${formData.telefono} / ${formData.email}. ${formData.mensaje ? `Mensaje adicional: ${formData.mensaje}` : ''}`;
+
+      const whatsappUrl = `${WHATSAPP_BASE_URL}&text=${encodeURIComponent(message)}`;
+
+      // Track conversion - Google Ads placeholder
+      /* <!-- GOOGLE TAG CONVERSIÓN FORMULARIO -->
+       * gtag('event', 'conversion', {
+       *   'send_to': 'AW-XXXXXXXXXX/YYYYYYYYYYY',
+       *   'event_category': 'lead',
+       *   'event_label': formData.tipoEvento,
+       * });
+       */
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'conversion', {
+          event_category: 'lead',
+          event_label: formData.tipoEvento,
+        });
+      }
+
+      // Open WhatsApp
+      window.open(whatsappUrl, '_blank');
+
+      toast({
+        title: '¡Mensaje enviado!',
+        description: 'Te redirigimos a WhatsApp para completar tu consulta.',
+      });
+
+      // Reset form
+      setFormData({
+        nombre: '',
+        email: '',
+        telefono: '',
+        tipoEvento: '',
+        invitados: '',
+        fecha: '',
+        mensaje: '',
+      });
+    } catch (err) {
+      console.error('Error:', err);
+      toast({
+        title: 'Error',
+        description: 'Hubo un problema al enviar tu consulta. Intentá nuevamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Open WhatsApp
-    window.open(whatsappUrl, '_blank');
-
-    toast({
-      title: '¡Mensaje enviado!',
-      description: 'Te redirigimos a WhatsApp para completar tu consulta.',
-    });
   };
 
   return (
@@ -196,13 +238,14 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
 
       <button
         type="submit"
-        className="btn-gold w-full flex items-center justify-center gap-2 py-4"
+        disabled={isSubmitting}
+        className="btn-gold w-full flex items-center justify-center gap-2 py-4 disabled:opacity-50"
         /* GOOGLE TAG SUBMIT FORM */
         data-google-conversion-id=""
         data-google-conversion-label=""
       >
         <Send className="w-5 h-5" />
-        Enviar y contactar por WhatsApp
+        {isSubmitting ? 'Enviando...' : 'Enviar y contactar por WhatsApp'}
       </button>
     </form>
   );
