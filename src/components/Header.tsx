@@ -43,7 +43,7 @@ export const Header = () => {
             e.preventDefault();
             scrollToSection('#inicio');
           }}
-          className="font-playfair text-2xl md:text-3xl font-semibold text-primary"
+          className="font-playfair text-2xl md:text-3xl font-semibold text-white"
         >
           Urbana Eventos
         </a>
@@ -66,16 +66,12 @@ export const Header = () => {
           ))}
         </ul>
 
-        {/* CTA Button - Desktop */}
+        {/* Admin Button - Desktop */}
         <a
-          href="#contacto"
-          onClick={(e) => {
-            e.preventDefault();
-            scrollToSection('#contacto');
-          }}
+          href="/admin"
           className="hidden md:block btn-gold text-sm"
         >
-          Cotizar Evento
+          Admin
         </a>
 
         {/* Mobile Menu Button */}
@@ -108,14 +104,10 @@ export const Header = () => {
             ))}
             <li className="pt-4">
               <a
-                href="#contacto"
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection('#contacto');
-                }}
+                href="/admin"
                 className="btn-gold block text-center"
               >
-                Cotizar Evento
+                Admin
               </a>
             </li>
           </ul>
