@@ -1,137 +1,192 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, LogOut, Eye } from 'lucide-react';
+import { Save, LogOut, Eye, Upload, Trash2, Image as ImageIcon, Users, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
-// Simple hardcoded auth - replace with real auth in production
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'urbana2024';
-
-interface ContentData {
-  hero: {
-    title: string;
-    subtitle: string;
-    benefits: string[];
-  };
-  about: {
-    title: string;
-    description: string;
-    features: string[];
-  };
-  contact: {
-    title: string;
-    subtitle: string;
-  };
+interface GalleryImage {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string;
+  category: string | null;
+  display_order: number | null;
+  is_active: boolean | null;
 }
 
-const defaultContent: ContentData = {
-  hero: {
-    title: 'Organizamos tu evento ideal, vos solo disfrutá',
-    subtitle: 'Contanos qué evento querés hacer y nosotros te asignamos el salón perfecto: cumpleaños, casamientos, eventos empresariales y más.',
-    benefits: ['Más de 10 salones aliados', 'Eventos de 30 a 200+ personas', 'Respuesta rápida por WhatsApp'],
-  },
-  about: {
-    title: '¿Quiénes Somos?',
-    description: 'Somos una central especializada en conectar personas con salones de eventos de forma fácil, rápida y segura. Te escuchamos, analizamos tu evento y te guiamos hacia la mejor opción disponible.',
-    features: ['Analizamos tu tipo de evento y preferencias', 'Propuesta personalizada del salón ideal', 'Acuerdos directos con los mejores salones', 'Acompañamiento en todo el proceso'],
-  },
-  contact: {
-    title: 'Pedí tu propuesta para el salón ideal',
-    subtitle: 'Completá el formulario con los detalles de tu evento y nuestro equipo te contactará con la mejor propuesta de salón y costos.',
-  },
-};
+interface Lead {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  tipo_evento: string;
+  departamento: string | null;
+  invitados: string | null;
+  fecha_evento: string | null;
+  mensaje: string | null;
+  status: string | null;
+  created_at: string;
+}
 
 const AdminPanel = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [content, setContent] = useState<ContentData>(defaultContent);
+  const { user, isAdmin, loading, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState<'gallery' | 'leads'>('gallery');
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [newImageTitle, setNewImageTitle] = useState('');
 
   useEffect(() => {
-    // Check if already logged in
-    const loggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-    setIsLoggedIn(loggedIn);
-
-    // Load saved content
-    const savedContent = localStorage.getItem('siteContent');
-    if (savedContent) {
-      setContent(JSON.parse(savedContent));
+    if (!loading && !user) {
+      navigate('/auth');
     }
-  }, []);
+  }, [user, loading, navigate]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
-      setIsLoggedIn(true);
-      localStorage.setItem('adminLoggedIn', 'true');
-      toast({ title: 'Bienvenido', description: 'Has iniciado sesión correctamente.' });
+  useEffect(() => {
+    if (isAdmin) {
+      fetchGalleryImages();
+      fetchLeads();
+    }
+  }, [isAdmin]);
+
+  const fetchGalleryImages = async () => {
+    const { data, error } = await supabase
+      .from('gallery_images')
+      .select('*')
+      .order('display_order', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching gallery:', error);
     } else {
-      toast({ title: 'Error', description: 'Usuario o contraseña incorrectos.', variant: 'destructive' });
+      setGalleryImages(data || []);
     }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem('adminLoggedIn');
+  const fetchLeads = async () => {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching leads:', error);
+    } else {
+      setLeads(data || []);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !newImageTitle.trim()) {
+      toast({ title: 'Error', description: 'Ingresá un título para la imagen.', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `gallery/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('gallery')
+        .getPublicUrl(filePath);
+
+      const { error: insertError } = await supabase
+        .from('gallery_images')
+        .insert({
+          title: newImageTitle,
+          image_url: publicUrl,
+          display_order: galleryImages.length,
+        });
+
+      if (insertError) throw insertError;
+
+      toast({ title: 'Imagen subida', description: 'La imagen se agregó a la galería.' });
+      setNewImageTitle('');
+      fetchGalleryImages();
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      toast({ title: 'Error', description: err.message || 'No se pudo subir la imagen.', variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteImage = async (image: GalleryImage) => {
+    try {
+      const urlParts = image.image_url.split('/');
+      const filePath = urlParts.slice(-2).join('/');
+
+      await supabase.storage.from('gallery').remove([filePath]);
+
+      const { error } = await supabase
+        .from('gallery_images')
+        .delete()
+        .eq('id', image.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Imagen eliminada' });
+      fetchGalleryImages();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast({ title: 'Error', description: 'No se pudo eliminar la imagen.', variant: 'destructive' });
+    }
+  };
+
+  const toggleImageActive = async (image: GalleryImage) => {
+    const { error } = await supabase
+      .from('gallery_images')
+      .update({ is_active: !image.is_active })
+      .eq('id', image.id);
+
+    if (error) {
+      toast({ title: 'Error', description: 'No se pudo actualizar la imagen.', variant: 'destructive' });
+    } else {
+      fetchGalleryImages();
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
     toast({ title: 'Sesión cerrada' });
   };
 
-  const handleSave = () => {
-    localStorage.setItem('siteContent', JSON.stringify(content));
-    toast({ title: 'Cambios guardados', description: 'Los cambios se reflejarán en la página.' });
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const updateContent = (section: keyof ContentData, field: string, value: string | string[]) => {
-    setContent((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
-    }));
-  };
+  if (!user) {
+    return null;
+  }
 
-  if (!isLoggedIn) {
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-card border border-border rounded-xl p-8">
-          <h1 className="font-playfair text-2xl font-semibold text-primary text-center mb-6">
-            Panel de Administración
-          </h1>
-          <p className="text-muted-foreground text-center mb-8">Urbana Eventos</p>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Usuario</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg input-dark border"
-                placeholder="Usuario"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Contraseña</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg input-dark border"
-                placeholder="Contraseña"
-              />
-            </div>
-            <button type="submit" className="btn-gold w-full">
-              Iniciar Sesión
-            </button>
-          </form>
-
-          <button
-            onClick={() => navigate('/')}
-            className="mt-4 w-full text-muted-foreground hover:text-primary text-sm flex items-center justify-center gap-2"
-          >
-            <Eye className="w-4 h-4" /> Ver sitio público
+        <div className="text-center">
+          <h1 className="font-playfair text-2xl font-semibold text-primary mb-4">Acceso Restringido</h1>
+          <p className="text-muted-foreground mb-6">
+            Tu cuenta no tiene permisos de administrador.
+          </p>
+          <button onClick={handleLogout} className="btn-gold-outline">
+            Cerrar Sesión
           </button>
         </div>
       </div>
@@ -143,10 +198,13 @@ const AdminPanel = () => {
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="font-playfair text-xl font-semibold text-primary">
-            Admin - Urbana Eventos
-          </h1>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-foreground text-background px-4 py-2 rounded-lg">
+              <span className="font-playfair text-sm font-bold tracking-wide">URBANA EVENTOS</span>
+            </div>
+            <span className="text-muted-foreground text-sm hidden md:inline">Admin</span>
+          </div>
+          <div className="flex gap-3">
             <button
               onClick={() => navigate('/')}
               className="btn-gold-outline text-sm flex items-center gap-2"
@@ -154,14 +212,9 @@ const AdminPanel = () => {
               <Eye className="w-4 h-4" /> Ver sitio
             </button>
             <button
-              onClick={handleSave}
-              className="btn-gold text-sm flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" /> Guardar
-            </button>
-            <button
               onClick={handleLogout}
-              className="text-muted-foreground hover:text-destructive transition-colors"
+              className="text-muted-foreground hover:text-destructive transition-colors p-2"
+              title="Cerrar sesión"
             >
               <LogOut className="w-5 h-5" />
             </button>
@@ -169,117 +222,186 @@ const AdminPanel = () => {
         </div>
       </header>
 
-      {/* Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="space-y-8">
-          {/* Hero Section */}
-          <section className="bg-card border border-border rounded-xl p-6">
-            <h2 className="font-playfair text-xl font-semibold text-primary mb-4">Sección Inicio</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Título principal</label>
-                <input
-                  type="text"
-                  value={content.hero.title}
-                  onChange={(e) => updateContent('hero', 'title', e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg input-dark border"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Subtítulo</label>
-                <textarea
-                  value={content.hero.subtitle}
-                  onChange={(e) => updateContent('hero', 'subtitle', e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Beneficios (uno por línea)
-                </label>
-                <textarea
-                  value={content.hero.benefits.join('\n')}
-                  onChange={(e) => updateContent('hero', 'benefits', e.target.value.split('\n'))}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* About Section */}
-          <section className="bg-card border border-border rounded-xl p-6">
-            <h2 className="font-playfair text-xl font-semibold text-primary mb-4">Sección Nosotros</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Título</label>
-                <input
-                  type="text"
-                  value={content.about.title}
-                  onChange={(e) => updateContent('about', 'title', e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg input-dark border"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Descripción</label>
-                <textarea
-                  value={content.about.description}
-                  onChange={(e) => updateContent('about', 'description', e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Características (una por línea)
-                </label>
-                <textarea
-                  value={content.about.features.join('\n')}
-                  onChange={(e) => updateContent('about', 'features', e.target.value.split('\n'))}
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Contact Section */}
-          <section className="bg-card border border-border rounded-xl p-6">
-            <h2 className="font-playfair text-xl font-semibold text-primary mb-4">Sección Contacto</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Título</label>
-                <input
-                  type="text"
-                  value={content.contact.title}
-                  onChange={(e) => updateContent('contact', 'title', e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg input-dark border"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Subtítulo</label>
-                <textarea
-                  value={content.contact.subtitle}
-                  onChange={(e) => updateContent('contact', 'subtitle', e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Instructions */}
-          <div className="bg-secondary/30 border border-border rounded-xl p-6">
-            <h3 className="font-semibold text-foreground mb-2">Instrucciones</h3>
-            <ul className="text-muted-foreground text-sm space-y-1">
-              <li>• Los cambios se guardan en el navegador (localStorage).</li>
-              <li>• Hacé clic en "Guardar" para aplicar los cambios.</li>
-              <li>• Para agregar imágenes personalizadas, contactá al desarrollador.</li>
-              <li>• Usuario: admin / Contraseña: urbana2024</li>
-            </ul>
+      {/* Tabs */}
+      <div className="border-b border-border bg-card/50">
+        <div className="container mx-auto px-4">
+          <div className="flex gap-6">
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`py-4 px-2 border-b-2 transition-colors flex items-center gap-2 ${
+                activeTab === 'gallery'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" /> Galería
+            </button>
+            <button
+              onClick={() => setActiveTab('leads')}
+              className={`py-4 px-2 border-b-2 transition-colors flex items-center gap-2 ${
+                activeTab === 'leads'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Users className="w-4 h-4" /> Leads ({leads.length})
+            </button>
           </div>
         </div>
+      </div>
+
+      {/* Content */}
+      <main className="container mx-auto px-4 py-8">
+        {activeTab === 'gallery' && (
+          <div className="space-y-6">
+            {/* Upload Section */}
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h2 className="font-playfair text-xl font-semibold text-primary mb-4">Subir Nueva Imagen</h2>
+              <div className="flex flex-col md:flex-row gap-4">
+                <input
+                  type="text"
+                  value={newImageTitle}
+                  onChange={(e) => setNewImageTitle(e.target.value)}
+                  placeholder="Título de la imagen"
+                  className="flex-1 px-4 py-3 rounded-lg input-dark border"
+                />
+                <label className="btn-gold cursor-pointer flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  {isUploading ? 'Subiendo...' : 'Subir Imagen'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={isUploading}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Gallery Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {galleryImages.map((image) => (
+                <div
+                  key={image.id}
+                  className={`bg-card border rounded-xl overflow-hidden ${
+                    image.is_active ? 'border-border' : 'border-destructive/50 opacity-60'
+                  }`}
+                >
+                  <div className="aspect-video relative">
+                    <img
+                      src={image.image_url}
+                      alt={image.title}
+                      className="w-full h-full object-cover"
+                    />
+                    {!image.is_active && (
+                      <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                        <span className="text-destructive font-medium">Inactiva</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-foreground mb-2">{image.title}</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => toggleImageActive(image)}
+                        className={`flex-1 py-2 px-3 rounded-lg text-sm transition-colors ${
+                          image.is_active
+                            ? 'bg-secondary text-foreground hover:bg-secondary/80'
+                            : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        }`}
+                      >
+                        {image.is_active ? 'Desactivar' : 'Activar'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteImage(image)}
+                        className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {galleryImages.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No hay imágenes en la galería. Subí una para empezar.
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'leads' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="font-playfair text-xl font-semibold text-primary">Consultas Recibidas</h2>
+              <button
+                onClick={fetchLeads}
+                className="btn-gold-outline text-sm flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" /> Actualizar
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-card border-b border-border">
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Fecha</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Nombre</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Contacto</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Evento</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Depto.</th>
+                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Mensaje</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leads.map((lead) => (
+                    <tr key={lead.id} className="border-b border-border hover:bg-card/50">
+                      <td className="p-4 text-sm">
+                        {new Date(lead.created_at).toLocaleDateString('es-UY', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })}
+                      </td>
+                      <td className="p-4">
+                        <div className="font-medium text-foreground">{lead.nombre}</div>
+                      </td>
+                      <td className="p-4 text-sm">
+                        <a href={`mailto:${lead.email}`} className="text-primary hover:underline block">
+                          {lead.email}
+                        </a>
+                        <a href={`tel:${lead.telefono}`} className="text-muted-foreground hover:text-foreground">
+                          {lead.telefono}
+                        </a>
+                      </td>
+                      <td className="p-4 text-sm">
+                        <div className="font-medium">{lead.tipo_evento}</div>
+                        {lead.invitados && <div className="text-muted-foreground">{lead.invitados} personas</div>}
+                        {lead.fecha_evento && <div className="text-muted-foreground">{lead.fecha_evento}</div>}
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground">
+                        {lead.departamento || '-'}
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground max-w-xs truncate">
+                        {lead.mensaje || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {leads.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                No hay consultas registradas aún.
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
