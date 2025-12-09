@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const navItems = [
   { label: 'Inicio', href: '#inicio' },
@@ -12,6 +13,9 @@ const navItems = [
 export const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isHomePage = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,10 +25,21 @@ export const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+  const handleNavClick = (href: string) => {
+    if (!isHomePage) {
+      // Navigate to home and then scroll
+      navigate('/');
+      setTimeout(() => {
+        const element = document.querySelector(href);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
     setIsMobileMenuOpen(false);
   };
@@ -38,10 +53,10 @@ export const Header = () => {
       <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo */}
         <a
-          href="#inicio"
+          href="/"
           onClick={(e) => {
             e.preventDefault();
-            scrollToSection('#inicio');
+            handleNavClick('#inicio');
           }}
           className="font-playfair text-2xl md:text-3xl font-semibold text-white"
         >
@@ -56,7 +71,7 @@ export const Header = () => {
                 href={item.href}
                 onClick={(e) => {
                   e.preventDefault();
-                  scrollToSection(item.href);
+                  handleNavClick(item.href);
                 }}
                 className="nav-link text-sm uppercase tracking-wider"
               >
@@ -71,7 +86,7 @@ export const Header = () => {
           href="/admin"
           className="hidden md:block btn-gold text-sm"
         >
-          Admin
+          Ingresar como Administrador
         </a>
 
         {/* Mobile Menu Button */}
@@ -94,7 +109,7 @@ export const Header = () => {
                   href={item.href}
                   onClick={(e) => {
                     e.preventDefault();
-                    scrollToSection(item.href);
+                    handleNavClick(item.href);
                   }}
                   className="nav-link block py-2 text-lg"
                 >
@@ -107,7 +122,7 @@ export const Header = () => {
                 href="/admin"
                 className="btn-gold block text-center"
               >
-                Admin
+                Ingresar como Administrador
               </a>
             </li>
           </ul>

@@ -142,22 +142,12 @@ export const ServicesSection = ({ onSelectEventType }: ServicesSectionProps) => 
                 <p className="text-muted-foreground text-sm mb-4">
                   {get(event.contentKey, event.fallbackDescription)}
                 </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => scrollToContactAndSelect(event.type)}
-                    className="btn-gold-outline flex-1 text-sm py-2"
-                    data-event-type={event.type}
-                  >
-                    Cotizar
-                  </button>
-                  <Link
-                    to={`/servicios/${event.slug}`}
-                    className="btn-gold-outline text-sm py-2 px-3"
-                    title="Ver más"
-                  >
-                    +
-                  </Link>
-                </div>
+                <Link
+                  to={`/servicios/${event.slug}`}
+                  className="btn-gold w-full text-sm py-3 text-center block group-hover:shadow-lg transition-all duration-300"
+                >
+                  Cotizar {event.type}
+                </Link>
               </div>
             </div>
           ))}
