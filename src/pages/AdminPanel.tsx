@@ -5,8 +5,8 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 // Credenciales hardcodeadas - el cliente puede cambiarlas después
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'urbana2024';
+const ADMIN_USERNAME = 'adminUrbana';
+const ADMIN_PASSWORD = '#UrbanaEventos2025';
 
 interface GalleryImage {
   id: string;

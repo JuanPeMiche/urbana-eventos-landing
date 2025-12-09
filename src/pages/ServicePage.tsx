@@ -5,10 +5,11 @@ import { Footer } from '@/components/Footer';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 import { ContactForm } from '@/components/ContactForm';
 import { useSiteContent } from '@/hooks/useSiteContent';
-import { Heart, Briefcase, PartyPopper, Package, GraduationCap, Cake, Award, MoreHorizontal, ArrowLeft } from 'lucide-react';
+import { Heart, Briefcase, PartyPopper, Package, GraduationCap, Cake, Award, MoreHorizontal, Building2, Users, MessageCircle } from 'lucide-react';
 import eventWedding from '@/assets/event-wedding.jpg';
 import eventCorporate from '@/assets/event-corporate.jpg';
 import eventBirthday from '@/assets/event-birthday.jpg';
+import heroBg from '@/assets/hero-bg.jpg';
 
 type ServiceSlug = 'casamientos' | 'empresariales' | 'despedidas' | 'presentaciones' | 'capacitaciones' | 'cumpleanos' | 'aniversarios' | 'otros';
 
@@ -125,49 +126,108 @@ const ServicePage = () => {
   const Icon = service.icon;
   const description = get(service.contentKey, '');
 
+  const benefits = [
+    { icon: Building2, text: get('hero_benefit_1', 'Más de 10 salones aliados') },
+    { icon: Users, text: get('hero_benefit_2', 'Eventos para cualquier capacidad') },
+    { icon: MessageCircle, text: get('hero_benefit_3', 'Respuesta rápida por WhatsApp') },
+  ];
+
+  const scrollToForm = () => {
+    const element = document.querySelector('#cotizar');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <>
       <Header />
       <main>
-        {/* Hero Section */}
-        <section className="relative min-h-[60vh] flex items-center justify-center">
-          {service.image ? (
-            <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${service.image})` }}
-            >
-              <div className="overlay-dark" />
-            </div>
-          ) : (
-            <div className="absolute inset-0 bg-secondary">
-              <div className="overlay-dark opacity-50" />
-            </div>
-          )}
+        {/* Hero Section - Same as Home */}
+        <section className="relative min-h-screen flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${heroBg})` }}
+          >
+            <div className="overlay-dark" />
+          </div>
 
           <div className="relative z-10 container mx-auto px-4 py-32 text-center">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> Volver al inicio
-            </Link>
-            
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <Icon className="w-12 h-12 text-primary" />
+            {/* Logo Badge */}
+            <div className="inline-block bg-foreground text-background px-8 py-4 rounded-lg mb-8 animate-fade-in">
+              <span className="font-playfair text-2xl md:text-3xl font-bold tracking-wide">URBANA EVENTOS</span>
             </div>
-            
-            <h1 className="font-playfair text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6">
-              {service.title}
+
+            <h1 className="font-playfair text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              {loading ? (
+                'Organizamos tu evento ideal, vos solo disfrutá'
+              ) : (
+                <>
+                  {get('hero_title', 'Organizamos tu evento ideal, vos solo disfrutá').split(',')[0]},{' '}
+                  <span className="gold-gradient-text">
+                    {get('hero_title', 'Organizamos tu evento ideal, vos solo disfrutá').split(',')[1] || 'vos solo disfrutá'}
+                  </span>
+                </>
+              )}
             </h1>
             
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              {loading ? '...' : description}
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              {get('hero_subtitle', 'Contanos qué evento querés hacer y nosotros te asignamos el salón perfecto: cumpleaños, casamientos, eventos empresariales y más.')}
             </p>
+
+            <button
+              onClick={scrollToForm}
+              className="btn-gold text-lg px-8 py-4 animate-fade-in"
+              style={{ animationDelay: '0.4s' }}
+            >
+              Cotizar {service.eventType}
+            </button>
+          </div>
+
+          {/* Benefits Strip */}
+          <div className="absolute bottom-0 left-0 right-0 bg-card/90 backdrop-blur-sm border-t border-border">
+            <div className="container mx-auto px-4 py-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {benefits.map((benefit, index) => (
+                  <div key={index} className="flex items-center justify-center gap-3">
+                    <benefit.icon className="w-6 h-6 text-primary" />
+                    <span className="text-foreground font-medium">{benefit.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Service Specific Section */}
+        <section className="py-20 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <Icon className="w-12 h-12 text-primary" />
+              </div>
+              
+              <h2 className="section-title mb-6">{service.title}</h2>
+              
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+                {loading ? '...' : description}
+              </p>
+
+              {service.image && (
+                <div className="rounded-xl overflow-hidden mb-8">
+                  <img 
+                    src={service.image} 
+                    alt={service.title}
+                    className="w-full h-[400px] object-cover"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
         {/* Contact Form Section */}
-        <section className="py-20 bg-card">
+        <section id="cotizar" className="py-20 bg-card">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-12">
