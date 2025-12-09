@@ -1,19 +1,22 @@
 import { Building2, Users, MessageCircle } from 'lucide-react';
+import { useSiteContent } from '@/hooks/useSiteContent';
 import heroBg from '@/assets/hero-bg.jpg';
 
-const benefits = [
-  { icon: Building2, text: 'Más de 10 salones aliados' },
-  { icon: Users, text: 'Eventos para cualquier capacidad' },
-  { icon: MessageCircle, text: 'Respuesta rápida por WhatsApp' },
-];
-
 export const HeroSection = () => {
+  const { get, loading } = useSiteContent();
+
   const scrollToContact = () => {
     const element = document.querySelector('#contacto');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  const benefits = [
+    { icon: Building2, text: get('hero_benefit_1', 'Más de 10 salones aliados') },
+    { icon: Users, text: get('hero_benefit_2', 'Eventos para cualquier capacidad') },
+    { icon: MessageCircle, text: get('hero_benefit_3', 'Respuesta rápida por WhatsApp') },
+  ];
 
   return (
     <section id="inicio" className="relative min-h-screen flex items-center justify-center">
@@ -33,13 +36,20 @@ export const HeroSection = () => {
         </div>
 
         <h1 className="font-playfair text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          Organizamos tu evento ideal,{' '}
-          <span className="gold-gradient-text">vos solo disfrutá</span>
+          {loading ? (
+            'Organizamos tu evento ideal, vos solo disfrutá'
+          ) : (
+            <>
+              {get('hero_title', 'Organizamos tu evento ideal, vos solo disfrutá').split(',')[0]},{' '}
+              <span className="gold-gradient-text">
+                {get('hero_title', 'Organizamos tu evento ideal, vos solo disfrutá').split(',')[1] || 'vos solo disfrutá'}
+              </span>
+            </>
+          )}
         </h1>
         
         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          Contanos qué evento querés hacer y nosotros te asignamos el salón perfecto: 
-          cumpleaños, casamientos, eventos empresariales y más.
+          {get('hero_subtitle', 'Contanos qué evento querés hacer y nosotros te asignamos el salón perfecto: cumpleaños, casamientos, eventos empresariales y más.')}
         </p>
 
         <button

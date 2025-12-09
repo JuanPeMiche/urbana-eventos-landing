@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, LogOut, Eye, Upload, Trash2, Image as ImageIcon, Users, RefreshCw } from 'lucide-react';
+import { Save, Eye, Upload, Trash2, Image as ImageIcon, Users, RefreshCw, FileText, LogOut, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+
+// Credenciales hardcodeadas - el cliente puede cambiarlas después
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = 'urbana2024';
 
 interface GalleryImage {
   id: string;
@@ -29,27 +32,80 @@ interface Lead {
   created_at: string;
 }
 
+interface SiteContent {
+  id: string;
+  content: string;
+}
+
+const contentLabels: Record<string, string> = {
+  hero_title: 'Título Principal (Inicio)',
+  hero_subtitle: 'Subtítulo (Inicio)',
+  hero_benefit_1: 'Beneficio 1',
+  hero_benefit_2: 'Beneficio 2',
+  hero_benefit_3: 'Beneficio 3',
+  about_title: 'Título Nosotros',
+  about_text_1: 'Texto Nosotros 1',
+  about_text_2: 'Texto Nosotros 2',
+  contact_title: 'Título Contacto',
+  contact_subtitle: 'Subtítulo Contacto',
+  event_casamiento: 'Descripción: Casamiento',
+  event_fiesta_empresarial: 'Descripción: Fiesta Empresarial',
+  event_despedida: 'Descripción: Despedida de Año',
+  event_presentacion: 'Descripción: Presentación de Producto',
+  event_capacitacion: 'Descripción: Capacitación',
+  event_cumpleanos: 'Descripción: Cumpleaños',
+  event_aniversario: 'Descripción: Aniversario Empresarial',
+  event_otro: 'Descripción: Otro Evento',
+};
+
 const AdminPanel = () => {
   const navigate = useNavigate();
-  const { user, isAdmin, loading, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState<'gallery' | 'leads'>('gallery');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  const [activeTab, setActiveTab] = useState<'content' | 'gallery' | 'leads'>('content');
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [siteContent, setSiteContent] = useState<SiteContent[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [newImageTitle, setNewImageTitle] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
+  // Check session storage for login state
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
+    const adminSession = sessionStorage.getItem('admin_logged_in');
+    if (adminSession === 'true') {
+      setIsLoggedIn(true);
     }
-  }, [user, loading, navigate]);
+  }, []);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isLoggedIn) {
       fetchGalleryImages();
       fetchLeads();
+      fetchSiteContent();
     }
-  }, [isAdmin]);
+  }, [isLoggedIn]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      setIsLoggedIn(true);
+      sessionStorage.setItem('admin_logged_in', 'true');
+      setLoginError('');
+    } else {
+      setLoginError('Usuario o contraseña incorrectos');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    sessionStorage.removeItem('admin_logged_in');
+    setUsername('');
+    setPassword('');
+  };
 
   const fetchGalleryImages = async () => {
     const { data, error } = await supabase
@@ -57,10 +113,8 @@ const AdminPanel = () => {
       .select('*')
       .order('display_order', { ascending: true });
     
-    if (error) {
-      console.error('Error fetching gallery:', error);
-    } else {
-      setGalleryImages(data || []);
+    if (!error && data) {
+      setGalleryImages(data);
     }
   };
 
@@ -70,10 +124,43 @@ const AdminPanel = () => {
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) {
-      console.error('Error fetching leads:', error);
-    } else {
-      setLeads(data || []);
+    if (!error && data) {
+      setLeads(data);
+    }
+  };
+
+  const fetchSiteContent = async () => {
+    const { data, error } = await supabase
+      .from('site_content')
+      .select('*')
+      .order('id');
+    
+    if (!error && data) {
+      setSiteContent(data);
+    }
+  };
+
+  const handleContentChange = (id: string, newContent: string) => {
+    setSiteContent(prev => 
+      prev.map(item => item.id === id ? { ...item, content: newContent } : item)
+    );
+  };
+
+  const saveAllContent = async () => {
+    setIsSaving(true);
+    try {
+      for (const item of siteContent) {
+        const { error } = await supabase
+          .from('site_content')
+          .upsert({ id: item.id, content: item.content, updated_at: new Date().toISOString() });
+        
+        if (error) throw error;
+      }
+      toast({ title: 'Cambios guardados', description: 'Los textos se actualizaron correctamente.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: 'No se pudieron guardar los cambios.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -156,38 +243,63 @@ const AdminPanel = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-    toast({ title: 'Sesión cerrada' });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Cargando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  if (!isAdmin) {
+  // Login Screen
+  if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center">
-          <h1 className="font-playfair text-2xl font-semibold text-primary mb-4">Acceso Restringido</h1>
-          <p className="text-muted-foreground mb-6">
-            Tu cuenta no tiene permisos de administrador.
-          </p>
-          <button onClick={handleLogout} className="btn-gold-outline">
-            Cerrar Sesión
-          </button>
+        <div className="w-full max-w-md">
+          <div className="bg-card border border-border rounded-xl p-8">
+            <div className="text-center mb-8">
+              <div className="inline-block bg-foreground text-background px-6 py-3 rounded-lg mb-4">
+                <span className="font-playfair text-lg font-bold tracking-wide">URBANA EVENTOS</span>
+              </div>
+              <h1 className="font-playfair text-2xl font-semibold text-foreground mb-2">Panel de Administración</h1>
+              <p className="text-muted-foreground text-sm">Ingresá tus credenciales para continuar</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Usuario</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg input-dark border pl-10"
+                    placeholder="Usuario"
+                    required
+                  />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Contraseña</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg input-dark border"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              {loginError && (
+                <p className="text-destructive text-sm text-center">{loginError}</p>
+              )}
+
+              <button type="submit" className="btn-gold w-full py-3">
+                Ingresar
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <a href="/" className="text-primary hover:underline text-sm">
+                ← Volver al sitio
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -225,10 +337,20 @@ const AdminPanel = () => {
       {/* Tabs */}
       <div className="border-b border-border bg-card/50">
         <div className="container mx-auto px-4">
-          <div className="flex gap-6">
+          <div className="flex gap-6 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('content')}
+              className={`py-4 px-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'content'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <FileText className="w-4 h-4" /> Textos
+            </button>
             <button
               onClick={() => setActiveTab('gallery')}
-              className={`py-4 px-2 border-b-2 transition-colors flex items-center gap-2 ${
+              className={`py-4 px-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'gallery'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -238,7 +360,7 @@ const AdminPanel = () => {
             </button>
             <button
               onClick={() => setActiveTab('leads')}
-              className={`py-4 px-2 border-b-2 transition-colors flex items-center gap-2 ${
+              className={`py-4 px-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'leads'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -252,6 +374,127 @@ const AdminPanel = () => {
 
       {/* Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Content Tab */}
+        {activeTab === 'content' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="font-playfair text-xl font-semibold text-primary">Editar Textos del Sitio</h2>
+              <button
+                onClick={saveAllContent}
+                disabled={isSaving}
+                className="btn-gold flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+
+            <div className="grid gap-6">
+              {/* Inicio Section */}
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-primary rounded-full"></span>
+                  Sección Inicio
+                </h3>
+                <div className="space-y-4">
+                  {siteContent.filter(c => c.id.startsWith('hero_')).map(item => (
+                    <div key={item.id}>
+                      <label className="block text-sm text-muted-foreground mb-1">
+                        {contentLabels[item.id] || item.id}
+                      </label>
+                      {item.id === 'hero_subtitle' ? (
+                        <textarea
+                          value={item.content}
+                          onChange={(e) => handleContentChange(item.id, e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
+                          rows={3}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={item.content}
+                          onChange={(e) => handleContentChange(item.id, e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg input-dark border"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nosotros Section */}
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-primary rounded-full"></span>
+                  Sección Nosotros
+                </h3>
+                <div className="space-y-4">
+                  {siteContent.filter(c => c.id.startsWith('about_')).map(item => (
+                    <div key={item.id}>
+                      <label className="block text-sm text-muted-foreground mb-1">
+                        {contentLabels[item.id] || item.id}
+                      </label>
+                      <textarea
+                        value={item.content}
+                        onChange={(e) => handleContentChange(item.id, e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
+                        rows={item.id === 'about_title' ? 1 : 3}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Eventos Section */}
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-primary rounded-full"></span>
+                  Descripciones de Eventos
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {siteContent.filter(c => c.id.startsWith('event_')).map(item => (
+                    <div key={item.id}>
+                      <label className="block text-sm text-muted-foreground mb-1">
+                        {contentLabels[item.id] || item.id}
+                      </label>
+                      <textarea
+                        value={item.content}
+                        onChange={(e) => handleContentChange(item.id, e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
+                        rows={2}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Contacto Section */}
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-primary rounded-full"></span>
+                  Sección Contacto
+                </h3>
+                <div className="space-y-4">
+                  {siteContent.filter(c => c.id.startsWith('contact_')).map(item => (
+                    <div key={item.id}>
+                      <label className="block text-sm text-muted-foreground mb-1">
+                        {contentLabels[item.id] || item.id}
+                      </label>
+                      <textarea
+                        value={item.content}
+                        onChange={(e) => handleContentChange(item.id, e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
+                        rows={item.id === 'contact_title' ? 1 : 2}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Gallery Tab */}
         {activeTab === 'gallery' && (
           <div className="space-y-6">
             {/* Upload Section */}
@@ -333,6 +576,7 @@ const AdminPanel = () => {
           </div>
         )}
 
+        {/* Leads Tab */}
         {activeTab === 'leads' && (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
