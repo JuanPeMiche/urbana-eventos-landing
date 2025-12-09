@@ -202,7 +202,7 @@ const ServicePage = () => {
         {/* Service Specific Section */}
         <section className="py-20 bg-background">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center">
+            <div className="max-w-4xl mx-auto text-center animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <div className="flex items-center justify-center gap-3 mb-6">
                 <Icon className="w-12 h-12 text-primary" />
               </div>
@@ -214,7 +214,7 @@ const ServicePage = () => {
               </p>
 
               {service.image && (
-                <div className="rounded-xl overflow-hidden mb-8">
+                <div className="rounded-xl overflow-hidden mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
                   <img 
                     src={service.image} 
                     alt={service.title}
@@ -229,7 +229,7 @@ const ServicePage = () => {
         {/* Contact Form Section */}
         <section id="cotizar" className="py-20 bg-card">
           <div className="container mx-auto px-4">
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <div className="text-center mb-12">
                 <h2 className="section-title">Pedí tu cotización</h2>
                 <p className="text-muted-foreground">
