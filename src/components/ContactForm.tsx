@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, MessageCircle } from 'lucide-react';
+import { Send, Mail } from 'lucide-react';
 import { EventType, eventTypes } from './ServicesSection';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,29 @@ interface ContactFormProps {
 
 const WHATSAPP_NUMBER = '+598096303705';
 const WHATSAPP_BASE_URL = `https://api.whatsapp.com/send/?phone=${encodeURIComponent(WHATSAPP_NUMBER)}&type=phone_number&app_absent=0`;
+const GMAIL_ADDRESS = 'facudasilvaa@gmail.com';
+
+const DEPARTAMENTOS = [
+  'Montevideo',
+  'Canelones',
+  'Maldonado',
+  'Colonia',
+  'San José',
+  'Rocha',
+  'Paysandú',
+  'Salto',
+  'Rivera',
+  'Tacuarembó',
+  'Cerro Largo',
+  'Artigas',
+  'Durazno',
+  'Flores',
+  'Florida',
+  'Lavalleja',
+  'Río Negro',
+  'Soriano',
+  'Treinta y Tres',
+];
 
 export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,6 +41,7 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
     email: '',
     telefono: '',
     tipoEvento: '' as EventType | '',
+    departamento: '',
     invitados: '',
     fecha: '',
     mensaje: '',
@@ -36,7 +60,7 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, contactMethod: 'whatsapp' | 'gmail') => {
     e.preventDefault();
 
     // Validation
@@ -58,6 +82,7 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
         email: formData.email,
         telefono: formData.telefono,
         tipo_evento: formData.tipoEvento,
+        departamento: formData.departamento || null,
         invitados: formData.invitados || null,
         fecha_evento: formData.fecha || null,
         mensaje: formData.mensaje || null,
@@ -65,22 +90,27 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
 
       if (error) {
         console.error('Error saving lead:', error);
-        // Continue anyway - we still want to open WhatsApp
       }
 
-      // Build WhatsApp message
-      const message = `Hola, soy ${formData.nombre}. Quiero organizar un *${formData.tipoEvento}* para ${formData.invitados || 'cantidad a definir'} personas, el ${formData.fecha || 'fecha a definir'}. Mis datos de contacto son ${formData.telefono} / ${formData.email}. ${formData.mensaje ? `Mensaje adicional: ${formData.mensaje}` : ''}`;
-
-      const whatsappUrl = `${WHATSAPP_BASE_URL}&text=${encodeURIComponent(message)}`;
+      // Send confirmation email via edge function
+      try {
+        await supabase.functions.invoke('send-confirmation', {
+          body: {
+            nombre: formData.nombre,
+            email: formData.email,
+            telefono: formData.telefono,
+            tipoEvento: formData.tipoEvento,
+            departamento: formData.departamento,
+            invitados: formData.invitados,
+            fecha: formData.fecha,
+            mensaje: formData.mensaje,
+          },
+        });
+      } catch (emailError) {
+        console.error('Error sending confirmation email:', emailError);
+      }
 
       // Track conversion - Google Ads placeholder
-      /* <!-- GOOGLE TAG CONVERSIÓN FORMULARIO -->
-       * gtag('event', 'conversion', {
-       *   'send_to': 'AW-XXXXXXXXXX/YYYYYYYYYYY',
-       *   'event_category': 'lead',
-       *   'event_label': formData.tipoEvento,
-       * });
-       */
       if (typeof window !== 'undefined' && (window as any).gtag) {
         (window as any).gtag('event', 'conversion', {
           event_category: 'lead',
@@ -88,13 +118,35 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
         });
       }
 
-      // Open WhatsApp
-      window.open(whatsappUrl, '_blank');
-
-      toast({
-        title: '¡Mensaje enviado!',
-        description: 'Te redirigimos a WhatsApp para completar tu consulta.',
-      });
+      if (contactMethod === 'whatsapp') {
+        const message = `Hola, soy ${formData.nombre}. Quiero organizar un *${formData.tipoEvento}* ${formData.departamento ? `en ${formData.departamento}` : ''} para ${formData.invitados || 'cantidad a definir'} personas, el ${formData.fecha || 'fecha a definir'}. Mis datos de contacto son ${formData.telefono} / ${formData.email}. ${formData.mensaje ? `Mensaje adicional: ${formData.mensaje}` : ''}`;
+        const whatsappUrl = `${WHATSAPP_BASE_URL}&text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+        toast({
+          title: '¡Mensaje enviado!',
+          description: 'Te redirigimos a WhatsApp para completar tu consulta.',
+        });
+      } else {
+        const subject = encodeURIComponent(`Consulta: ${formData.tipoEvento} - ${formData.nombre}`);
+        const body = encodeURIComponent(
+          `Hola,\n\nSoy ${formData.nombre} y quiero organizar un ${formData.tipoEvento}.\n\n` +
+          `Departamento: ${formData.departamento || 'A definir'}\n` +
+          `Cantidad de invitados: ${formData.invitados || 'A definir'}\n` +
+          `Fecha tentativa: ${formData.fecha || 'A definir'}\n\n` +
+          `${formData.mensaje ? `Mensaje adicional: ${formData.mensaje}\n\n` : ''}` +
+          `Mis datos de contacto:\n` +
+          `Teléfono: ${formData.telefono}\n` +
+          `Email: ${formData.email}\n\n` +
+          `Quedo a la espera de su respuesta.\n` +
+          `Saludos.`
+        );
+        const gmailUrl = `mailto:${GMAIL_ADDRESS}?subject=${subject}&body=${body}`;
+        window.location.href = gmailUrl;
+        toast({
+          title: '¡Abriendo correo!',
+          description: 'Se abrirá tu aplicación de correo para enviar el mensaje.',
+        });
+      }
 
       // Reset form
       setFormData({
@@ -102,6 +154,7 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
         email: '',
         telefono: '',
         tipoEvento: '',
+        departamento: '',
         invitados: '',
         fecha: '',
         mensaje: '',
@@ -119,7 +172,7 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="nombre" className="block text-sm font-medium text-foreground mb-1">
@@ -193,6 +246,25 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
+          <label htmlFor="departamento" className="block text-sm font-medium text-foreground mb-1">
+            Departamento del evento
+          </label>
+          <select
+            id="departamento"
+            name="departamento"
+            value={formData.departamento}
+            onChange={handleChange}
+            className="w-full px-4 py-3 rounded-lg input-dark border"
+          >
+            <option value="">Seleccioná un departamento</option>
+            {DEPARTAMENTOS.map((depto) => (
+              <option key={depto} value={depto}>
+                {depto}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label htmlFor="invitados" className="block text-sm font-medium text-foreground mb-1">
             Cantidad estimada de invitados
           </label>
@@ -206,19 +278,20 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
             placeholder="Ej: 50-80 personas"
           />
         </div>
-        <div>
-          <label htmlFor="fecha" className="block text-sm font-medium text-foreground mb-1">
-            Fecha tentativa del evento
-          </label>
-          <input
-            type="date"
-            id="fecha"
-            name="fecha"
-            value={formData.fecha}
-            onChange={handleChange}
-            className="w-full px-4 py-3 rounded-lg input-dark border"
-          />
-        </div>
+      </div>
+
+      <div>
+        <label htmlFor="fecha" className="block text-sm font-medium text-foreground mb-1">
+          Fecha tentativa del evento
+        </label>
+        <input
+          type="date"
+          id="fecha"
+          name="fecha"
+          value={formData.fecha}
+          onChange={handleChange}
+          className="w-full px-4 py-3 rounded-lg input-dark border"
+        />
       </div>
 
       <div>
@@ -236,17 +309,26 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="btn-gold w-full flex items-center justify-center gap-2 py-4 disabled:opacity-50"
-        /* GOOGLE TAG SUBMIT FORM */
-        data-google-conversion-id=""
-        data-google-conversion-label=""
-      >
-        <Send className="w-5 h-5" />
-        {isSubmitting ? 'Enviando...' : 'Enviar y contactar por WhatsApp'}
-      </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <button
+          type="button"
+          onClick={(e) => handleSubmit(e, 'whatsapp')}
+          disabled={isSubmitting}
+          className="bg-[#25D366] text-white font-semibold px-6 py-4 rounded-lg transition-all duration-300 hover:bg-[#20bd5a] hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          <Send className="w-5 h-5" />
+          {isSubmitting ? 'Enviando...' : 'Contactar por WhatsApp'}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => handleSubmit(e, 'gmail')}
+          disabled={isSubmitting}
+          className="btn-gold flex items-center justify-center gap-2 py-4 disabled:opacity-50"
+        >
+          <Mail className="w-5 h-5" />
+          {isSubmitting ? 'Enviando...' : 'Contactar por Email'}
+        </button>
+      </div>
     </form>
   );
 };
@@ -286,13 +368,12 @@ export const QuickContactBlock = ({
       <p className="text-muted-foreground text-sm mb-4">{description}</p>
       <button
         onClick={handleWhatsAppClick}
-        className="flex items-center gap-2 bg-[#25D366] text-primary-foreground px-4 py-2 rounded-lg font-medium transition-all hover:bg-[#20bd5a]"
-        /* GOOGLE TAG - Quick Contact Button */
+        className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-lg font-medium transition-all hover:bg-[#20bd5a]"
         data-event-type={eventType}
         data-google-conversion-id={googleTagId || ''}
         data-google-conversion-label=""
       >
-        <MessageCircle className="w-5 h-5" />
+        <Send className="w-5 h-5" />
         WhatsApp {eventType}
       </button>
     </div>

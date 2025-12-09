@@ -3,7 +3,7 @@ import heroBg from '@/assets/hero-bg.jpg';
 
 const benefits = [
   { icon: Building2, text: 'Más de 10 salones aliados' },
-  { icon: Users, text: 'Eventos de 30 a 200+ personas' },
+  { icon: Users, text: 'Eventos para cualquier capacidad' },
   { icon: MessageCircle, text: 'Respuesta rápida por WhatsApp' },
 ];
 
@@ -27,7 +27,12 @@ export const HeroSection = () => {
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 py-32 text-center">
-        <h1 className="font-playfair text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6 animate-fade-in">
+        {/* Logo Badge */}
+        <div className="inline-block bg-foreground text-background px-8 py-4 rounded-lg mb-8 animate-fade-in">
+          <span className="font-playfair text-2xl md:text-3xl font-bold tracking-wide">URBANA EVENTOS</span>
+        </div>
+
+        <h1 className="font-playfair text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           Organizamos tu evento ideal,{' '}
           <span className="gold-gradient-text">vos solo disfrutá</span>
         </h1>
