@@ -1,25 +1,102 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    
+    <!-- Primary SEO -->
+    <title>Urbana Eventos | Salones de Fiestas y Eventos en Montevideo</title>
+    <meta name="description" content="Organizamos tu evento ideal en Montevideo. Salones para casamientos, cumpleaños, eventos empresariales y más. Cotizá gratis y recibí la mejor propuesta." />
+    <meta name="keywords" content="salón de fiestas, eventos empresariales, casamientos, cumpleaños, Montevideo, Urbana Eventos, salones para fiestas, despedida de año, eventos corporativos" />
+    <meta name="author" content="Urbana Eventos" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://urbanaeventos.com.uy/" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <!-- Open Graph -->
+    <meta property="og:title" content="Urbana Eventos | Salones de Fiestas y Eventos en Montevideo" />
+    <meta property="og:description" content="Organizamos tu evento ideal. Salones para casamientos, cumpleaños, eventos empresariales y más en Montevideo." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://urbanaeventos.com.uy/" />
+    <meta property="og:image" content="https://urbanaeventos.com.uy/og-image.jpg" />
+    <meta property="og:locale" content="es_UY" />
+    <meta property="og:site_name" content="Urbana Eventos" />
 
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="Urbana Eventos | Salones de Fiestas en Montevideo" />
+    <meta name="twitter:description" content="Organizamos tu evento ideal. Cotizá gratis y recibí la mejor propuesta." />
+    <meta name="twitter:image" content="https://urbanaeventos.com.uy/og-image.jpg" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Google Fonts preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- 
+      ========================================
+      GOOGLE TAG MANAGER - REPLACE WITH YOUR GTM ID
+      ========================================
+    -->
+    <!-- Google Tag Manager (Head) -->
+    <!--
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-XXXXXXXX');</script>
+    -->
+    <!-- End Google Tag Manager (Head) -->
+
+    <!-- 
+      ========================================
+      GOOGLE ADS CONVERSION TRACKING - REPLACE WITH YOUR CONVERSION ID
+      ========================================
+    -->
+    <!--
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-XXXXXXXXXX');
+    </script>
+    -->
+    <!-- End Google Ads -->
+
+    <!-- Structured Data - Local Business -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EventPlanner",
+      "name": "Urbana Eventos",
+      "description": "Gestión de salones y eventos en Montevideo. Conectamos personas con el espacio perfecto para casamientos, cumpleaños, eventos empresariales y más.",
+      "url": "https://urbanaeventos.com.uy",
+      "telephone": "+598096303705",
+      "email": "facudasilvaa@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Montevideo",
+        "addressCountry": "UY"
+      },
+      "areaServed": {
+        "@type": "City",
+        "name": "Montevideo"
+      },
+      "serviceType": ["Casamientos", "Eventos empresariales", "Cumpleaños", "Despedidas de año", "Capacitaciones"]
+    }
+    </script>
   </head>
 
   <body>
+    <!-- Google Tag Manager (noscript) -->
+    <!--
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXXX"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    -->
+    <!-- End Google Tag Manager (noscript) -->
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
