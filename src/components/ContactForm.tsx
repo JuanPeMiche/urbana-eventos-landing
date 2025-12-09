@@ -1,8 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Send, Mail } from 'lucide-react';
-import { EventType, eventTypes } from './ServicesSection';
+import { EventType } from './ServicesSection';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+const EVENT_TYPE_OPTIONS: EventType[] = [
+  'Casamiento',
+  'Fiesta empresarial',
+  'Despedida de año',
+  'Presentación de producto',
+  'Capacitación',
+  'Cumpleaños privado',
+  'Aniversario empresarial',
+  'Otro',
+];
 
 interface ContactFormProps {
   selectedEventType: EventType | null;
@@ -235,9 +246,9 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
             required
           >
             <option value="">Seleccioná una opción</option>
-            {eventTypes.map((event) => (
-              <option key={event.type} value={event.type}>
-                {event.type}
+            {EVENT_TYPE_OPTIONS.map((type) => (
+              <option key={type} value={type}>
+                {type}
               </option>
             ))}
           </select>

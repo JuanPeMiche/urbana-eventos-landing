@@ -1,4 +1,6 @@
 import { Heart, Briefcase, PartyPopper, Package, GraduationCap, Cake, Award, MoreHorizontal } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useSiteContent } from '@/hooks/useSiteContent';
 import eventWedding from '@/assets/event-wedding.jpg';
 import eventCorporate from '@/assets/event-corporate.jpg';
 import eventBirthday from '@/assets/event-birthday.jpg';
@@ -16,53 +18,71 @@ export type EventType =
 interface EventTypeData {
   type: EventType;
   icon: React.ComponentType<{ className?: string }>;
-  description: string;
+  contentKey: string;
+  fallbackDescription: string;
   image?: string;
+  slug: string;
 }
 
-export const eventTypes: EventTypeData[] = [
+const eventTypes: EventTypeData[] = [
   {
     type: 'Casamiento',
     icon: Heart,
-    description: 'Salones preparados para tu boda, con toda la elegancia que merecés.',
+    contentKey: 'event_casamiento',
+    fallbackDescription: 'Salones preparados para tu boda, con toda la elegancia que merecés.',
     image: eventWedding,
+    slug: 'casamientos',
   },
   {
     type: 'Fiesta empresarial',
     icon: Briefcase,
-    description: 'Celebrá logros y fortalecé a tu equipo en el espacio perfecto.',
+    contentKey: 'event_fiesta_empresarial',
+    fallbackDescription: 'Celebrá logros y fortalecé a tu equipo en el espacio perfecto.',
     image: eventCorporate,
+    slug: 'empresariales',
   },
   {
     type: 'Despedida de año',
     icon: PartyPopper,
-    description: 'Cerrá el año con estilo y alegría junto a tus seres queridos.',
+    contentKey: 'event_despedida',
+    fallbackDescription: 'Cerrá el año con estilo y alegría junto a tus seres queridos.',
+    slug: 'despedidas',
   },
   {
     type: 'Presentación de producto',
     icon: Package,
-    description: 'Espacios profesionales para lanzar tu producto con impacto.',
+    contentKey: 'event_presentacion',
+    fallbackDescription: 'Espacios profesionales para lanzar tu producto con impacto.',
+    slug: 'presentaciones',
   },
   {
     type: 'Capacitación',
     icon: GraduationCap,
-    description: 'Potenciá tu equipo en un lugar organizado y preparado.',
+    contentKey: 'event_capacitacion',
+    fallbackDescription: 'Potenciá tu equipo en un lugar organizado y preparado.',
+    slug: 'capacitaciones',
   },
   {
     type: 'Cumpleaños privado',
     icon: Cake,
-    description: 'Festejá a lo grande con tus invitados en un ambiente exclusivo.',
+    contentKey: 'event_cumpleanos',
+    fallbackDescription: 'Festejá a lo grande con tus invitados en un ambiente exclusivo.',
     image: eventBirthday,
+    slug: 'cumpleanos',
   },
   {
     type: 'Aniversario empresarial',
     icon: Award,
-    description: 'Brindá por más años juntos y más logros alcanzados.',
+    contentKey: 'event_aniversario',
+    fallbackDescription: 'Brindá por más años juntos y más logros alcanzados.',
+    slug: 'aniversarios',
   },
   {
     type: 'Otro',
     icon: MoreHorizontal,
-    description: 'Contanos tu idea y encontramos el espacio ideal.',
+    contentKey: 'event_otro',
+    fallbackDescription: 'Contanos tu idea y encontramos el espacio ideal.',
+    slug: 'otros',
   },
 ];
 
@@ -71,6 +91,8 @@ interface ServicesSectionProps {
 }
 
 export const ServicesSection = ({ onSelectEventType }: ServicesSectionProps) => {
+  const { get } = useSiteContent();
+
   const scrollToContactAndSelect = (type: EventType) => {
     onSelectEventType(type);
     setTimeout(() => {
@@ -117,17 +139,25 @@ export const ServicesSection = ({ onSelectEventType }: ServicesSectionProps) => 
                     {event.type}
                   </h3>
                 </div>
-                <p className="text-muted-foreground text-sm mb-4">{event.description}</p>
-                <button
-                  onClick={() => scrollToContactAndSelect(event.type)}
-                  className="btn-gold-outline w-full text-sm py-2"
-                  /* GOOGLE TAG - Event Type Button */
-                  data-event-type={event.type}
-                  data-google-conversion-id=""
-                  data-google-conversion-label=""
-                >
-                  Quiero este evento
-                </button>
+                <p className="text-muted-foreground text-sm mb-4">
+                  {get(event.contentKey, event.fallbackDescription)}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => scrollToContactAndSelect(event.type)}
+                    className="btn-gold-outline flex-1 text-sm py-2"
+                    data-event-type={event.type}
+                  >
+                    Cotizar
+                  </button>
+                  <Link
+                    to={`/servicios/${event.slug}`}
+                    className="btn-gold-outline text-sm py-2 px-3"
+                    title="Ver más"
+                  >
+                    +
+                  </Link>
+                </div>
               </div>
             </div>
           ))}

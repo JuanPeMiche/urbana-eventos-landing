@@ -1,19 +1,23 @@
 import { EventType } from './ServicesSection';
 import { ContactForm, QuickContactBlock } from './ContactForm';
+import { useSiteContent } from '@/hooks/useSiteContent';
 
 interface ContactSectionProps {
   selectedEventType: EventType | null;
 }
 
 export const ContactSection = ({ selectedEventType }: ContactSectionProps) => {
+  const { get } = useSiteContent();
+
   return (
     <section id="contacto" className="py-20 md:py-28 bg-card">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="section-title">Pedí tu propuesta para el salón ideal</h2>
+          <h2 className="section-title">
+            {get('contact_title', 'Pedí tu propuesta para el salón ideal')}
+          </h2>
           <p className="section-subtitle">
-            Completá el formulario con los detalles de tu evento y nuestro equipo te contactará 
-            con la mejor propuesta de salón y costos.
+            {get('contact_subtitle', 'Completá el formulario con los detalles de tu evento y nuestro equipo te contactará con la mejor propuesta de salón y costos.')}
           </p>
         </div>
 
@@ -32,7 +36,6 @@ export const ContactSection = ({ selectedEventType }: ContactSectionProps) => {
               Contacto rápido por tipo de evento
             </h3>
             
-            {/* <!-- GOOGLE TAG CASAMIENTO --> */}
             <QuickContactBlock
               eventType="Casamiento"
               title="Casamientos"
@@ -40,7 +43,6 @@ export const ContactSection = ({ selectedEventType }: ContactSectionProps) => {
               googleTagId=""
             />
 
-            {/* <!-- GOOGLE TAG EMPRESARIAL --> */}
             <QuickContactBlock
               eventType="Fiesta empresarial"
               title="Eventos Empresariales"
@@ -48,7 +50,6 @@ export const ContactSection = ({ selectedEventType }: ContactSectionProps) => {
               googleTagId=""
             />
 
-            {/* <!-- GOOGLE TAG CUMPLEAÑOS --> */}
             <QuickContactBlock
               eventType="Cumpleaños privado"
               title="Cumpleaños Privados"
