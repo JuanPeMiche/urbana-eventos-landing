@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, Eye, Upload, Trash2, Image as ImageIcon, Users, RefreshCw, FileText, LogOut, Lock } from 'lucide-react';
+import { Save, Eye, Upload, Trash2, Image as ImageIcon, Users, RefreshCw, FileText, LogOut, Lock, Loader2, Layers } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -58,6 +58,17 @@ const contentLabels: Record<string, string> = {
   event_otro: 'Descripción: Otro Evento',
 };
 
+const serviceCategories = [
+  { id: 'casamientos', label: 'Casamientos' },
+  { id: 'empresariales', label: 'Fiesta Empresarial' },
+  { id: 'despedidas', label: 'Despedida de Año' },
+  { id: 'presentaciones', label: 'Presentación de Producto' },
+  { id: 'capacitaciones', label: 'Capacitación' },
+  { id: 'cumpleanos', label: 'Cumpleaños Privado' },
+  { id: 'aniversarios', label: 'Aniversario Empresarial' },
+  { id: 'otros', label: 'Otro' },
+];
+
 const AdminPanel = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -65,13 +76,19 @@ const AdminPanel = () => {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'content' | 'gallery' | 'leads'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'gallery' | 'services' | 'leads'>('content');
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [serviceImages, setServiceImages] = useState<GalleryImage[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [siteContent, setSiteContent] = useState<SiteContent[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingService, setIsUploadingService] = useState(false);
   const [newImageTitle, setNewImageTitle] = useState('');
+  const [newServiceImageTitle, setNewServiceImageTitle] = useState('');
+  const [selectedServiceCategory, setSelectedServiceCategory] = useState('casamientos');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false);
+  const [isLoadingServices, setIsLoadingServices] = useState(false);
 
   // Check session storage for login state
   useEffect(() => {
@@ -84,6 +101,7 @@ const AdminPanel = () => {
   useEffect(() => {
     if (isLoggedIn) {
       fetchGalleryImages();
+      fetchServiceImages();
       fetchLeads();
       fetchSiteContent();
     }
@@ -108,13 +126,42 @@ const AdminPanel = () => {
   };
 
   const fetchGalleryImages = async () => {
-    const { data, error } = await supabase
-      .from('gallery_images')
-      .select('*')
-      .order('display_order', { ascending: true });
-    
-    if (!error && data) {
-      setGalleryImages(data);
+    setIsLoadingGallery(true);
+    try {
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .eq('category', 'salon')
+        .order('display_order', { ascending: true });
+      
+      if (error) throw error;
+      setGalleryImages(data || []);
+    } catch (err) {
+      console.error('Error fetching gallery:', err);
+      toast({ title: 'Error', description: 'No se pudieron cargar las imágenes de galería.', variant: 'destructive' });
+    } finally {
+      setIsLoadingGallery(false);
+    }
+  };
+
+  const fetchServiceImages = async () => {
+    setIsLoadingServices(true);
+    try {
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .neq('category', 'salon')
+        .not('category', 'is', null)
+        .order('category', { ascending: true })
+        .order('display_order', { ascending: true });
+      
+      if (error) throw error;
+      setServiceImages(data || []);
+    } catch (err) {
+      console.error('Error fetching services:', err);
+      toast({ title: 'Error', description: 'No se pudieron cargar las imágenes de servicios.', variant: 'destructive' });
+    } finally {
+      setIsLoadingServices(false);
     }
   };
 
@@ -192,6 +239,7 @@ const AdminPanel = () => {
         .insert({
           title: newImageTitle,
           image_url: publicUrl,
+          category: 'salon',
           display_order: galleryImages.length,
         });
 
@@ -205,6 +253,53 @@ const AdminPanel = () => {
       toast({ title: 'Error', description: err.message || 'No se pudo subir la imagen.', variant: 'destructive' });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleServiceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !newServiceImageTitle.trim()) {
+      toast({ title: 'Error', description: 'Ingresá un título para la imagen.', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploadingService(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `services/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('gallery')
+        .getPublicUrl(filePath);
+
+      const existingForCategory = serviceImages.filter(img => img.category === selectedServiceCategory);
+
+      const { error: insertError } = await supabase
+        .from('gallery_images')
+        .insert({
+          title: newServiceImageTitle,
+          image_url: publicUrl,
+          category: selectedServiceCategory,
+          display_order: existingForCategory.length,
+        });
+
+      if (insertError) throw insertError;
+
+      toast({ title: 'Imagen subida', description: `La imagen se agregó a ${serviceCategories.find(c => c.id === selectedServiceCategory)?.label}.` });
+      setNewServiceImageTitle('');
+      fetchServiceImages();
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      toast({ title: 'Error', description: err.message || 'No se pudo subir la imagen.', variant: 'destructive' });
+    } finally {
+      setIsUploadingService(false);
     }
   };
 
@@ -224,6 +319,7 @@ const AdminPanel = () => {
 
       toast({ title: 'Imagen eliminada' });
       fetchGalleryImages();
+      fetchServiceImages();
     } catch (err: any) {
       console.error('Delete error:', err);
       toast({ title: 'Error', description: 'No se pudo eliminar la imagen.', variant: 'destructive' });
@@ -240,6 +336,7 @@ const AdminPanel = () => {
       toast({ title: 'Error', description: 'No se pudo actualizar la imagen.', variant: 'destructive' });
     } else {
       fetchGalleryImages();
+      fetchServiceImages();
     }
   };
 
@@ -356,7 +453,17 @@ const AdminPanel = () => {
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              <ImageIcon className="w-4 h-4" /> Galería
+              <ImageIcon className="w-4 h-4" /> Galería ({galleryImages.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('services')}
+              className={`py-4 px-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'services'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Layers className="w-4 h-4" /> Servicios ({serviceImages.length})
             </button>
             <button
               onClick={() => setActiveTab('leads')}
@@ -497,9 +604,21 @@ const AdminPanel = () => {
         {/* Gallery Tab */}
         {activeTab === 'gallery' && (
           <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="font-playfair text-xl font-semibold text-primary">Galería del Salón</h2>
+              <button
+                onClick={fetchGalleryImages}
+                disabled={isLoadingGallery}
+                className="btn-gold-outline text-sm flex items-center gap-2"
+              >
+                {isLoadingGallery ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Actualizar
+              </button>
+            </div>
+
             {/* Upload Section */}
             <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="font-playfair text-xl font-semibold text-primary mb-4">Subir Nueva Imagen</h2>
+              <h3 className="font-semibold text-foreground mb-4">Subir Nueva Imagen</h3>
               <div className="flex flex-col md:flex-row gap-4">
                 <input
                   type="text"
@@ -508,7 +627,7 @@ const AdminPanel = () => {
                   placeholder="Título de la imagen"
                   className="flex-1 px-4 py-3 rounded-lg input-dark border"
                 />
-                <label className="btn-gold cursor-pointer flex items-center gap-2">
+                <label className="btn-gold cursor-pointer flex items-center gap-2 justify-center">
                   <Upload className="w-4 h-4" />
                   {isUploading ? 'Subiendo...' : 'Subir Imagen'}
                   <input
@@ -522,55 +641,192 @@ const AdminPanel = () => {
               </div>
             </div>
 
+            {/* Loading State */}
+            {isLoadingGallery && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Cargando imágenes...</span>
+              </div>
+            )}
+
             {/* Gallery Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {galleryImages.map((image) => (
-                <div
-                  key={image.id}
-                  className={`bg-card border rounded-xl overflow-hidden ${
-                    image.is_active ? 'border-border' : 'border-destructive/50 opacity-60'
-                  }`}
-                >
-                  <div className="aspect-video relative">
-                    <img
-                      src={image.image_url}
-                      alt={image.title}
-                      className="w-full h-full object-cover"
-                    />
-                    {!image.is_active && (
-                      <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                        <span className="text-destructive font-medium">Inactiva</span>
+            {!isLoadingGallery && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {galleryImages.map((image) => (
+                  <div
+                    key={image.id}
+                    className={`bg-card border rounded-xl overflow-hidden ${
+                      image.is_active ? 'border-border' : 'border-destructive/50 opacity-60'
+                    }`}
+                  >
+                    <div className="aspect-video relative">
+                      <img
+                        src={image.image_url}
+                        alt={image.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {!image.is_active && (
+                        <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                          <span className="text-destructive font-medium">Inactiva</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-foreground mb-2">{image.title}</h3>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => toggleImageActive(image)}
+                          className={`flex-1 py-2 px-3 rounded-lg text-sm transition-colors ${
+                            image.is_active
+                              ? 'bg-secondary text-foreground hover:bg-secondary/80'
+                              : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          }`}
+                        >
+                          {image.is_active ? 'Desactivar' : 'Activar'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteImage(image)}
+                          className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-foreground mb-2">{image.title}</h3>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => toggleImageActive(image)}
-                        className={`flex-1 py-2 px-3 rounded-lg text-sm transition-colors ${
-                          image.is_active
-                            ? 'bg-secondary text-foreground hover:bg-secondary/80'
-                            : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                        }`}
-                      >
-                        {image.is_active ? 'Desactivar' : 'Activar'}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteImage(image)}
-                        className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
-            {galleryImages.length === 0 && (
+            {!isLoadingGallery && galleryImages.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 No hay imágenes en la galería. Subí una para empezar.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Services Tab */}
+        {activeTab === 'services' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="font-playfair text-xl font-semibold text-primary">Imágenes de Servicios (Organizamos)</h2>
+              <button
+                onClick={fetchServiceImages}
+                disabled={isLoadingServices}
+                className="btn-gold-outline text-sm flex items-center gap-2"
+              >
+                {isLoadingServices ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Actualizar
+              </button>
+            </div>
+
+            {/* Upload Section */}
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h3 className="font-semibold text-foreground mb-4">Subir Imagen para un Servicio</h3>
+              <div className="grid md:grid-cols-3 gap-4">
+                <select
+                  value={selectedServiceCategory}
+                  onChange={(e) => setSelectedServiceCategory(e.target.value)}
+                  className="px-4 py-3 rounded-lg input-dark border"
+                >
+                  {serviceCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.label}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={newServiceImageTitle}
+                  onChange={(e) => setNewServiceImageTitle(e.target.value)}
+                  placeholder="Título de la imagen"
+                  className="px-4 py-3 rounded-lg input-dark border"
+                />
+                <label className="btn-gold cursor-pointer flex items-center gap-2 justify-center">
+                  <Upload className="w-4 h-4" />
+                  {isUploadingService ? 'Subiendo...' : 'Subir Imagen'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleServiceImageUpload}
+                    disabled={isUploadingService}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Loading State */}
+            {isLoadingServices && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Cargando imágenes...</span>
+              </div>
+            )}
+
+            {/* Services Images by Category */}
+            {!isLoadingServices && serviceCategories.map(category => {
+              const categoryImages = serviceImages.filter(img => img.category === category.id);
+              if (categoryImages.length === 0) return null;
+              
+              return (
+                <div key={category.id} className="bg-card border border-border rounded-xl p-6">
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-primary rounded-full"></span>
+                    {category.label} ({categoryImages.length})
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categoryImages.map((image) => (
+                      <div
+                        key={image.id}
+                        className={`border rounded-lg overflow-hidden ${
+                          image.is_active ? 'border-border' : 'border-destructive/50 opacity-60'
+                        }`}
+                      >
+                        <div className="aspect-video relative">
+                          <img
+                            src={image.image_url}
+                            alt={image.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                          {!image.is_active && (
+                            <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                              <span className="text-destructive font-medium text-sm">Inactiva</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3">
+                          <h4 className="font-medium text-foreground text-sm mb-2">{image.title}</h4>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => toggleImageActive(image)}
+                              className={`flex-1 py-1.5 px-2 rounded text-xs transition-colors ${
+                                image.is_active
+                                  ? 'bg-secondary text-foreground hover:bg-secondary/80'
+                                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                              }`}
+                            >
+                              {image.is_active ? 'Desactivar' : 'Activar'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteImage(image)}
+                              className="p-1.5 text-destructive hover:bg-destructive/10 rounded transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {!isLoadingServices && serviceImages.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-2">No hay imágenes de servicios.</p>
+                <p className="text-sm">Subí imágenes para cada tipo de evento que ofrecés.</p>
               </div>
             )}
           </div>
