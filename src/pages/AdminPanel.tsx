@@ -8,6 +8,9 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { SortableImageCard } from '@/components/admin/SortableImageCard';
 
+// Credenciales hardcodeadas del administrador
+const ADMIN_USERNAME = 'adminUrbana';
+const ADMIN_PASSWORD = '#UrbanaEventos2025';
 interface GalleryImage {
   id: string;
   title: string;
@@ -73,13 +76,10 @@ const AdminPanel = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
-  const [hasAdmins, setHasAdmins] = useState(true);
 
   const [activeTab, setActiveTab] = useState<'content' | 'gallery' | 'services' | 'leads'>('content');
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
@@ -101,43 +101,26 @@ const AdminPanel = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Check Supabase Auth session and if admins exist
+  // Check session storage for login state and auto-login to Supabase
   useEffect(() => {
     const checkAuth = async () => {
-      // Check if any admin exists
-      const { count } = await supabase
-        .from('user_roles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'admin');
-      
-      setHasAdmins((count || 0) > 0);
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check if user has admin role
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-        
-        if (roleData) {
-          setIsLoggedIn(true);
+      const adminSession = sessionStorage.getItem('admin_logged_in');
+      if (adminSession === 'true') {
+        setIsLoggedIn(true);
+        // Auto sign-in to Supabase with the admin account for storage operations
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          // Sign in as admin for RLS
+          await supabase.auth.signInWithPassword({
+            email: 'admin@urbanaeventos.com',
+            password: ADMIN_PASSWORD,
+          });
         }
       }
       setIsCheckingAuth(false);
     };
     
     checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        setIsLoggedIn(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -154,78 +137,51 @@ const AdminPanel = () => {
     setIsLoggingIn(true);
     setLoginError('');
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      // Check if user has admin role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', data.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (roleError || !roleData) {
-        await supabase.auth.signOut();
-        setLoginError('No tenés permisos de administrador');
-        return;
+    // Check hardcoded credentials
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      // Sign in to Supabase with admin account for RLS operations
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: 'admin@urbanaeventos.com',
+          password: ADMIN_PASSWORD,
+        });
+        
+        // If admin account doesn't exist, create it
+        if (error?.message?.includes('Invalid login credentials')) {
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: 'admin@urbanaeventos.com',
+            password: ADMIN_PASSWORD,
+          });
+          
+          if (signUpError) throw signUpError;
+          
+          // Add admin role
+          if (signUpData.user) {
+            await supabase
+              .from('user_roles')
+              .insert({ user_id: signUpData.user.id, role: 'admin' });
+          }
+        }
+      } catch (err) {
+        console.error('Supabase auth error:', err);
+        // Continue anyway - hardcoded login is valid
       }
 
       setIsLoggedIn(true);
+      sessionStorage.setItem('admin_logged_in', 'true');
       toast({ title: 'Bienvenido', description: 'Sesión iniciada correctamente' });
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setLoginError(err.message === 'Invalid login credentials' 
-        ? 'Email o contraseña incorrectos' 
-        : err.message || 'Error al iniciar sesión');
-    } finally {
-      setIsLoggingIn(false);
+    } else {
+      setLoginError('Usuario o contraseña incorrectos');
     }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsRegistering(true);
-    setLoginError('');
-
-    try {
-      // Create user
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      if (!data.user) throw new Error('No se pudo crear el usuario');
-
-      // Add admin role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: data.user.id, role: 'admin' });
-
-      if (roleError) throw roleError;
-
-      setIsLoggedIn(true);
-      setHasAdmins(true);
-      setShowRegister(false);
-      toast({ title: 'Admin creado', description: 'Tu cuenta de administrador está lista' });
-    } catch (err: any) {
-      console.error('Register error:', err);
-      setLoginError(err.message || 'Error al crear la cuenta');
-    } finally {
-      setIsRegistering(false);
-    }
+    
+    setIsLoggingIn(false);
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsLoggedIn(false);
-    setEmail('');
+    sessionStorage.removeItem('admin_logged_in');
+    setUsername('');
     setPassword('');
     toast({ title: 'Sesión cerrada' });
   };
@@ -527,122 +483,49 @@ const AdminPanel = () => {
                 <span className="font-playfair text-lg font-bold tracking-wide">URBANA EVENTOS</span>
               </div>
               <h1 className="font-playfair text-2xl font-semibold text-foreground mb-2">Panel de Administración</h1>
-              <p className="text-muted-foreground text-sm">
-                {!hasAdmins && !showRegister 
-                  ? 'No hay administradores. Creá el primero.' 
-                  : showRegister 
-                    ? 'Creá tu cuenta de administrador'
-                    : 'Ingresá tus credenciales para continuar'}
-              </p>
+              <p className="text-muted-foreground text-sm">Ingresá tus credenciales para continuar</p>
             </div>
 
-            {!hasAdmins && !showRegister ? (
-              <div className="space-y-4">
-                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-sm text-muted-foreground">
-                  <p className="mb-2"><strong className="text-foreground">Primera vez:</strong></p>
-                  <p>Necesitás crear una cuenta de administrador para gestionar el sitio.</p>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Usuario</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg input-dark border pl-10"
+                    placeholder="Usuario"
+                    required
+                  />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 </div>
-                <button 
-                  onClick={() => setShowRegister(true)} 
-                  className="btn-gold w-full py-3"
-                >
-                  Crear cuenta de administrador
-                </button>
               </div>
-            ) : showRegister ? (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Email</label>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg input-dark border pl-10"
-                      placeholder="admin@ejemplo.com"
-                      required
-                    />
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Contraseña</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg input-dark border"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              {loginError && (
+                <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {loginError}
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Contraseña</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg input-dark border"
-                    placeholder="Mínimo 6 caracteres"
-                    minLength={6}
-                    required
-                  />
-                </div>
-
-                {loginError && (
-                  <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    {loginError}
-                  </div>
-                )}
-
-                <button type="submit" disabled={isRegistering} className="btn-gold w-full py-3 flex items-center justify-center gap-2">
-                  {isRegistering && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isRegistering ? 'Creando cuenta...' : 'Crear cuenta'}
-                </button>
-
-                {hasAdmins && (
-                  <button 
-                    type="button"
-                    onClick={() => { setShowRegister(false); setLoginError(''); }}
-                    className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    Ya tengo cuenta, iniciar sesión
-                  </button>
-                )}
-              </form>
-            ) : (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Email</label>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg input-dark border pl-10"
-                      placeholder="admin@ejemplo.com"
-                      required
-                    />
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Contraseña</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg input-dark border"
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-
-                {loginError && (
-                  <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    {loginError}
-                  </div>
-                )}
-
-                <button type="submit" disabled={isLoggingIn} className="btn-gold w-full py-3 flex items-center justify-center gap-2">
-                  {isLoggingIn && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isLoggingIn ? 'Ingresando...' : 'Ingresar'}
-                </button>
-              </form>
-            )}
+              <button type="submit" disabled={isLoggingIn} className="btn-gold w-full py-3 flex items-center justify-center gap-2">
+                {isLoggingIn && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isLoggingIn ? 'Ingresando...' : 'Ingresar'}
+              </button>
+            </form>
 
             <div className="mt-6 text-center">
               <a href="/" className="text-primary hover:underline text-sm">
