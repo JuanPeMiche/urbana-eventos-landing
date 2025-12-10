@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Save, Eye, Upload, Trash2, Image as ImageIcon, Users, RefreshCw, FileText, LogOut, Lock, Loader2, Layers } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/imageCompression';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableImageCard } from '@/components/admin/SortableImageCard';
 
 // Credenciales hardcodeadas - el cliente puede cambiarlas después
 const ADMIN_USERNAME = 'adminUrbana';
@@ -89,6 +93,12 @@ const AdminPanel = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingGallery, setIsLoadingGallery] = useState(false);
   const [isLoadingServices, setIsLoadingServices] = useState(false);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   // Check session storage for login state
   useEffect(() => {
@@ -220,13 +230,16 @@ const AdminPanel = () => {
 
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+      // Compress the image
+      toast({ title: 'Comprimiendo imagen...', description: 'Optimizando para web.' });
+      const compressedFile = await compressImage(file);
+      
+      const fileName = `${Date.now()}.webp`;
       const filePath = `gallery/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('gallery')
-        .upload(filePath, file);
+        .upload(filePath, compressedFile);
 
       if (uploadError) throw uploadError;
 
@@ -245,7 +258,7 @@ const AdminPanel = () => {
 
       if (insertError) throw insertError;
 
-      toast({ title: 'Imagen subida', description: 'La imagen se agregó a la galería.' });
+      toast({ title: 'Imagen subida', description: 'La imagen se comprimió y agregó a la galería.' });
       setNewImageTitle('');
       fetchGalleryImages();
     } catch (err: any) {
@@ -265,13 +278,16 @@ const AdminPanel = () => {
 
     setIsUploadingService(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+      // Compress the image
+      toast({ title: 'Comprimiendo imagen...', description: 'Optimizando para web.' });
+      const compressedFile = await compressImage(file);
+      
+      const fileName = `${Date.now()}.webp`;
       const filePath = `services/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('gallery')
-        .upload(filePath, file);
+        .upload(filePath, compressedFile);
 
       if (uploadError) throw uploadError;
 
@@ -292,7 +308,7 @@ const AdminPanel = () => {
 
       if (insertError) throw insertError;
 
-      toast({ title: 'Imagen subida', description: `La imagen se agregó a ${serviceCategories.find(c => c.id === selectedServiceCategory)?.label}.` });
+      toast({ title: 'Imagen subida', description: `La imagen se comprimió y agregó a ${serviceCategories.find(c => c.id === selectedServiceCategory)?.label}.` });
       setNewServiceImageTitle('');
       fetchServiceImages();
     } catch (err: any) {
@@ -337,6 +353,62 @@ const AdminPanel = () => {
     } else {
       fetchGalleryImages();
       fetchServiceImages();
+    }
+  };
+
+  const handleGalleryDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = galleryImages.findIndex((img) => img.id === active.id);
+      const newIndex = galleryImages.findIndex((img) => img.id === over.id);
+      
+      const newOrder = arrayMove(galleryImages, oldIndex, newIndex);
+      setGalleryImages(newOrder);
+
+      // Update display_order in database
+      try {
+        for (let i = 0; i < newOrder.length; i++) {
+          await supabase
+            .from('gallery_images')
+            .update({ display_order: i })
+            .eq('id', newOrder[i].id);
+        }
+        toast({ title: 'Orden actualizado' });
+      } catch (err) {
+        console.error('Error updating order:', err);
+        fetchGalleryImages(); // Revert on error
+      }
+    }
+  };
+
+  const handleServiceDragEnd = async (event: DragEndEvent, category: string) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const categoryImages = serviceImages.filter(img => img.category === category);
+      const oldIndex = categoryImages.findIndex((img) => img.id === active.id);
+      const newIndex = categoryImages.findIndex((img) => img.id === over.id);
+      
+      const newCategoryOrder = arrayMove(categoryImages, oldIndex, newIndex);
+      
+      // Update the full service images array
+      const otherImages = serviceImages.filter(img => img.category !== category);
+      setServiceImages([...otherImages, ...newCategoryOrder]);
+
+      // Update display_order in database
+      try {
+        for (let i = 0; i < newCategoryOrder.length; i++) {
+          await supabase
+            .from('gallery_images')
+            .update({ display_order: i })
+            .eq('id', newCategoryOrder[i].id);
+        }
+        toast({ title: 'Orden actualizado' });
+      } catch (err) {
+        console.error('Error updating order:', err);
+        fetchServiceImages(); // Revert on error
+      }
     }
   };
 
@@ -605,7 +677,10 @@ const AdminPanel = () => {
         {activeTab === 'gallery' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="font-playfair text-xl font-semibold text-primary">Galería del Salón</h2>
+              <div>
+                <h2 className="font-playfair text-xl font-semibold text-primary">Galería del Salón</h2>
+                <p className="text-muted-foreground text-sm mt-1">Arrastrá las imágenes para reordenarlas</p>
+              </div>
               <button
                 onClick={fetchGalleryImages}
                 disabled={isLoadingGallery}
@@ -619,6 +694,7 @@ const AdminPanel = () => {
             {/* Upload Section */}
             <div className="bg-card border border-border rounded-xl p-6">
               <h3 className="font-semibold text-foreground mb-4">Subir Nueva Imagen</h3>
+              <p className="text-muted-foreground text-sm mb-4">Las imágenes se comprimen automáticamente para optimizar la carga.</p>
               <div className="flex flex-col md:flex-row gap-4">
                 <input
                   type="text"
@@ -629,7 +705,7 @@ const AdminPanel = () => {
                 />
                 <label className="btn-gold cursor-pointer flex items-center gap-2 justify-center">
                   <Upload className="w-4 h-4" />
-                  {isUploading ? 'Subiendo...' : 'Subir Imagen'}
+                  {isUploading ? 'Comprimiendo...' : 'Subir Imagen'}
                   <input
                     type="file"
                     accept="image/*"
@@ -649,53 +725,29 @@ const AdminPanel = () => {
               </div>
             )}
 
-            {/* Gallery Grid */}
-            {!isLoadingGallery && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {galleryImages.map((image) => (
-                  <div
-                    key={image.id}
-                    className={`bg-card border rounded-xl overflow-hidden ${
-                      image.is_active ? 'border-border' : 'border-destructive/50 opacity-60'
-                    }`}
-                  >
-                    <div className="aspect-video relative">
-                      <img
-                        src={image.image_url}
-                        alt={image.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
+            {/* Gallery Grid with Drag and Drop */}
+            {!isLoadingGallery && galleryImages.length > 0 && (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleGalleryDragEnd}
+              >
+                <SortableContext
+                  items={galleryImages.map(img => img.id)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {galleryImages.map((image) => (
+                      <SortableImageCard
+                        key={image.id}
+                        image={image}
+                        onToggleActive={toggleImageActive}
+                        onDelete={handleDeleteImage}
                       />
-                      {!image.is_active && (
-                        <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                          <span className="text-destructive font-medium">Inactiva</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-foreground mb-2">{image.title}</h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => toggleImageActive(image)}
-                          className={`flex-1 py-2 px-3 rounded-lg text-sm transition-colors ${
-                            image.is_active
-                              ? 'bg-secondary text-foreground hover:bg-secondary/80'
-                              : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                          }`}
-                        >
-                          {image.is_active ? 'Desactivar' : 'Activar'}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteImage(image)}
-                          className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
 
             {!isLoadingGallery && galleryImages.length === 0 && (
@@ -710,7 +762,10 @@ const AdminPanel = () => {
         {activeTab === 'services' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="font-playfair text-xl font-semibold text-primary">Imágenes de Servicios (Organizamos)</h2>
+              <div>
+                <h2 className="font-playfair text-xl font-semibold text-primary">Imágenes de Servicios (Organizamos)</h2>
+                <p className="text-muted-foreground text-sm mt-1">Arrastrá las imágenes para reordenarlas dentro de cada categoría</p>
+              </div>
               <button
                 onClick={fetchServiceImages}
                 disabled={isLoadingServices}
@@ -724,6 +779,7 @@ const AdminPanel = () => {
             {/* Upload Section */}
             <div className="bg-card border border-border rounded-xl p-6">
               <h3 className="font-semibold text-foreground mb-4">Subir Imagen para un Servicio</h3>
+              <p className="text-muted-foreground text-sm mb-4">Las imágenes se comprimen automáticamente para optimizar la carga.</p>
               <div className="grid md:grid-cols-3 gap-4">
                 <select
                   value={selectedServiceCategory}
@@ -743,7 +799,7 @@ const AdminPanel = () => {
                 />
                 <label className="btn-gold cursor-pointer flex items-center gap-2 justify-center">
                   <Upload className="w-4 h-4" />
-                  {isUploadingService ? 'Subiendo...' : 'Subir Imagen'}
+                  {isUploadingService ? 'Comprimiendo...' : 'Subir Imagen'}
                   <input
                     type="file"
                     accept="image/*"
@@ -763,7 +819,7 @@ const AdminPanel = () => {
               </div>
             )}
 
-            {/* Services Images by Category */}
+            {/* Services Images by Category with Drag and Drop */}
             {!isLoadingServices && serviceCategories.map(category => {
               const categoryImages = serviceImages.filter(img => img.category === category.id);
               if (categoryImages.length === 0) return null;
@@ -774,51 +830,28 @@ const AdminPanel = () => {
                     <span className="w-2 h-2 bg-primary rounded-full"></span>
                     {category.label} ({categoryImages.length})
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {categoryImages.map((image) => (
-                      <div
-                        key={image.id}
-                        className={`border rounded-lg overflow-hidden ${
-                          image.is_active ? 'border-border' : 'border-destructive/50 opacity-60'
-                        }`}
-                      >
-                        <div className="aspect-video relative">
-                          <img
-                            src={image.image_url}
-                            alt={image.title}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event) => handleServiceDragEnd(event, category.id)}
+                  >
+                    <SortableContext
+                      items={categoryImages.map(img => img.id)}
+                      strategy={rectSortingStrategy}
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {categoryImages.map((image) => (
+                          <SortableImageCard
+                            key={image.id}
+                            image={image}
+                            onToggleActive={toggleImageActive}
+                            onDelete={handleDeleteImage}
+                            compact
                           />
-                          {!image.is_active && (
-                            <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                              <span className="text-destructive font-medium text-sm">Inactiva</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-3">
-                          <h4 className="font-medium text-foreground text-sm mb-2">{image.title}</h4>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => toggleImageActive(image)}
-                              className={`flex-1 py-1.5 px-2 rounded text-xs transition-colors ${
-                                image.is_active
-                                  ? 'bg-secondary text-foreground hover:bg-secondary/80'
-                                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                              }`}
-                            >
-                              {image.is_active ? 'Desactivar' : 'Activar'}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteImage(image)}
-                              className="p-1.5 text-destructive hover:bg-destructive/10 rounded transition-colors"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </SortableContext>
+                  </DndContext>
                 </div>
               );
             })}
