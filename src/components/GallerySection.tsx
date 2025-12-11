@@ -1,5 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { resolveImageUrl } from '@/lib/imageResolver';
+
+// Fallback images from assets
 import gallery1 from '@/assets/gallery-1.jpg';
 import gallery2 from '@/assets/gallery-2.jpg';
 import gallery3 from '@/assets/gallery-3.jpg';
@@ -15,7 +19,7 @@ interface GalleryImage {
   category: string;
 }
 
-const galleryImages: GalleryImage[] = [
+const fallbackGalleryImages: GalleryImage[] = [
   {
     id: '1',
     title: 'Salón Elegante',
@@ -61,8 +65,34 @@ const galleryImages: GalleryImage[] = [
 ];
 
 export const GallerySection = () => {
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(fallbackGalleryImages);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const fetchGalleryImages = async () => {
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .eq('category', 'salon')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        const mappedImages: GalleryImage[] = data.map((img) => ({
+          id: img.id,
+          title: img.title,
+          description: img.description || '',
+          // Use the image resolver to handle both asset paths and URLs
+          image: resolveImageUrl(img.image_url),
+          category: 'Salón',
+        }));
+        setGalleryImages(mappedImages);
+      }
+    };
+
+    fetchGalleryImages();
+  }, []);
 
   const openLightbox = (image: GalleryImage, index: number) => {
     setSelectedImage(image);

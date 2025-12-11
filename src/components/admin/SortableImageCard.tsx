@@ -1,6 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Trash2, GripVertical } from 'lucide-react';
+import { resolveImageUrl, isLocalAsset } from '@/lib/imageResolver';
 
 interface GalleryImage {
   id: string;
@@ -51,7 +52,7 @@ export const SortableImageCard = ({ image, onToggleActive, onDelete, compact = f
             <GripVertical className="w-4 h-4 text-muted-foreground" />
           </div>
           <img
-            src={image.image_url}
+            src={resolveImageUrl(image.image_url)}
             alt={image.title}
             className="w-full h-full object-cover"
             loading="lazy"
@@ -75,12 +76,14 @@ export const SortableImageCard = ({ image, onToggleActive, onDelete, compact = f
             >
               {image.is_active ? 'Desactivar' : 'Activar'}
             </button>
-            <button
-              onClick={() => onDelete(image)}
-              className="p-1.5 text-destructive hover:bg-destructive/10 rounded transition-colors"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
+            {!isLocalAsset(image.image_url) && (
+              <button
+                onClick={() => onDelete(image)}
+                className="p-1.5 text-destructive hover:bg-destructive/10 rounded transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -104,7 +107,7 @@ export const SortableImageCard = ({ image, onToggleActive, onDelete, compact = f
           <GripVertical className="w-5 h-5 text-muted-foreground" />
         </div>
         <img
-          src={image.image_url}
+          src={resolveImageUrl(image.image_url)}
           alt={image.title}
           className="w-full h-full object-cover"
           loading="lazy"
@@ -128,12 +131,14 @@ export const SortableImageCard = ({ image, onToggleActive, onDelete, compact = f
           >
             {image.is_active ? 'Desactivar' : 'Activar'}
           </button>
-          <button
-            onClick={() => onDelete(image)}
-            className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {!isLocalAsset(image.image_url) && (
+            <button
+              onClick={() => onDelete(image)}
+              className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>

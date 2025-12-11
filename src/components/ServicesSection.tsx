@@ -3,6 +3,7 @@ import { Heart, Briefcase, PartyPopper, Package, GraduationCap, Cake, Award, Mor
 import { Link } from 'react-router-dom';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveImageUrl } from '@/lib/imageResolver';
 import eventWedding from '@/assets/event-wedding.jpg';
 import eventCorporate from '@/assets/event-corporate.jpg';
 import eventBirthday from '@/assets/event-birthday.jpg';
@@ -121,7 +122,10 @@ export const ServicesSection = ({ onSelectEventType }: ServicesSectionProps) => 
 
   const getImageForEvent = (event: EventTypeData): string | undefined => {
     const dbImage = serviceImages.find(img => img.category === event.slug);
-    return dbImage?.image_url || event.fallbackImage;
+    if (dbImage) {
+      return resolveImageUrl(dbImage.image_url);
+    }
+    return event.fallbackImage;
   };
 
   const scrollToContactAndSelect = (type: EventType) => {
