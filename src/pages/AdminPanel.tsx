@@ -79,14 +79,10 @@ const contentLabels: Record<string, string> = {
 };
 
 const serviceCategories = [
+  { id: 'cumpleanos', label: 'Cumpleaños' },
   { id: 'casamientos', label: 'Casamientos' },
-  { id: 'empresariales', label: 'Fiesta Empresarial' },
-  { id: 'despedidas', label: 'Despedida de Año' },
-  { id: 'presentaciones', label: 'Presentación de Producto' },
-  { id: 'capacitaciones', label: 'Capacitación' },
-  { id: 'cumpleanos', label: 'Cumpleaños Privado' },
-  { id: 'aniversarios', label: 'Aniversario Empresarial' },
-  { id: 'otros', label: 'Otro' },
+  { id: 'empresariales', label: 'Empresariales' },
+  { id: 'despedidas', label: 'Despedidas' },
 ];
 
 const AdminPanel = () => {
@@ -107,7 +103,7 @@ const AdminPanel = () => {
   const [isUploadingService, setIsUploadingService] = useState(false);
   const [newImageTitle, setNewImageTitle] = useState('');
   const [newServiceImageTitle, setNewServiceImageTitle] = useState('');
-  const [selectedServiceCategory, setSelectedServiceCategory] = useState('casamientos');
+  const [selectedServiceCategory, setSelectedServiceCategory] = useState('cumpleanos');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingGallery, setIsLoadingGallery] = useState(false);
   const [isLoadingServices, setIsLoadingServices] = useState(false);
@@ -944,8 +940,8 @@ const AdminPanel = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="font-playfair text-xl font-semibold text-primary">Imágenes de Servicios (Organizamos)</h2>
-                <p className="text-muted-foreground text-sm mt-1">Arrastrá las imágenes para reordenarlas dentro de cada categoría</p>
+                <h2 className="font-playfair text-xl font-semibold text-primary">Imágenes de Páginas de Servicios</h2>
+                <p className="text-muted-foreground text-sm mt-1">Subí imágenes para cada sección del sitio (Cumpleaños, Casamientos, Empresariales, Despedidas)</p>
               </div>
               <button
                 onClick={fetchServiceImages}

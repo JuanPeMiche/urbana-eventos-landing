@@ -54,19 +54,27 @@ export const Header = () => {
           ))}
         </ul>
 
-        {/* Contact Button - Desktop */}
-        <Link
-          to="/#contacto"
-          onClick={(e) => {
-            if (location.pathname === '/') {
-              e.preventDefault();
-              document.querySelector('#contacto')?.scrollIntoView({ behavior: 'smooth' });
-            }
-          }}
-          className="hidden lg:block btn-gold text-sm"
-        >
-          Contacto
-        </Link>
+        {/* Contact & Admin Buttons - Desktop */}
+        <div className="hidden lg:flex items-center gap-4">
+          <Link
+            to="/#contacto"
+            onClick={(e) => {
+              if (location.pathname === '/') {
+                e.preventDefault();
+                document.querySelector('#contacto')?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="btn-gold text-sm"
+          >
+            Contacto
+          </Link>
+          <Link
+            to="/admin"
+            className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase tracking-wider"
+          >
+            Admin
+          </Link>
+        </div>
 
         {/* Mobile Menu Button */}
         <button
@@ -95,13 +103,20 @@ export const Header = () => {
                 </Link>
               </li>
             ))}
-            <li className="pt-4">
+            <li className="pt-4 flex flex-col gap-3">
               <Link
                 to="/#contacto"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="btn-gold block text-center"
               >
                 Contacto
+              </Link>
+              <Link
+                to="/admin"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-muted-foreground hover:text-primary transition-colors text-center py-2"
+              >
+                Admin
               </Link>
             </li>
           </ul>
