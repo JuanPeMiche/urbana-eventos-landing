@@ -5,11 +5,13 @@ import { Footer } from '@/components/Footer';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 import { SimpleContactForm } from '@/components/SimpleContactForm';
 import { useSiteContent } from '@/hooks/useSiteContent';
+import { useServiceImage } from '@/hooks/useServiceImage';
 import eventWedding from '@/assets/event-wedding.jpg';
 import heroBg from '@/assets/hero-bg.jpg';
 
 const Casamientos = () => {
   const { get } = useSiteContent();
+  const { imageUrl } = useServiceImage('casamientos');
 
   useEffect(() => {
     document.title = 'Salones para Casamientos y Bodas en Montevideo | Urbana Eventos';
@@ -116,11 +118,11 @@ const Casamientos = () => {
                 </ul>
               </div>
 
-              <div className="rounded-xl overflow-hidden">
+              <div className="rounded-xl overflow-hidden h-[400px]">
                 <img 
-                  src={eventWedding} 
+                  src={imageUrl || eventWedding} 
                   alt="Casamiento en salón elegante"
-                  className="w-full h-[400px] object-cover"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>

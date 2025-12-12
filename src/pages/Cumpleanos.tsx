@@ -5,11 +5,13 @@ import { Footer } from '@/components/Footer';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 import { SimpleContactForm } from '@/components/SimpleContactForm';
 import { useSiteContent } from '@/hooks/useSiteContent';
+import { useServiceImage } from '@/hooks/useServiceImage';
 import eventBirthday from '@/assets/event-birthday.jpg';
 import heroBg from '@/assets/hero-bg.jpg';
 
 const Cumpleanos = () => {
   const { get } = useSiteContent();
+  const { imageUrl } = useServiceImage('cumpleanos');
 
   useEffect(() => {
     document.title = 'Salones para Cumpleaños de 15 y Privados en Montevideo | Urbana Eventos';
@@ -116,11 +118,11 @@ const Cumpleanos = () => {
                 </ul>
               </div>
 
-              <div className="rounded-xl overflow-hidden">
+              <div className="rounded-xl overflow-hidden h-[400px]">
                 <img 
-                  src={eventBirthday} 
+                  src={imageUrl || eventBirthday} 
                   alt="Cumpleaños en salón exclusivo"
-                  className="w-full h-[400px] object-cover"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>

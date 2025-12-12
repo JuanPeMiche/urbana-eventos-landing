@@ -5,10 +5,12 @@ import { Footer } from '@/components/Footer';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 import { SimpleContactForm } from '@/components/SimpleContactForm';
 import { useSiteContent } from '@/hooks/useSiteContent';
+import { useServiceImage } from '@/hooks/useServiceImage';
 import heroBg from '@/assets/hero-bg.jpg';
 
 const DespedidasDeAno = () => {
   const { get } = useSiteContent();
+  const { imageUrl } = useServiceImage('despedidas');
 
   useEffect(() => {
     document.title = 'Salones para Despedidas de Año Empresariales en Montevideo | Urbana Eventos';
@@ -115,13 +117,23 @@ const DespedidasDeAno = () => {
                 </ul>
               </div>
 
-              <div className="rounded-xl overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center h-[400px]">
-                <div className="text-center p-8">
-                  <PartyPopper className="w-24 h-24 text-primary mx-auto mb-4" />
-                  <p className="text-foreground text-xl font-playfair">
-                    ¡Reservá tu salón para fin de año!
-                  </p>
-                </div>
+              <div className="rounded-xl overflow-hidden h-[400px]">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt="Despedidas de Año"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <div className="text-center p-8">
+                      <PartyPopper className="w-24 h-24 text-primary mx-auto mb-4" />
+                      <p className="text-foreground text-xl font-playfair">
+                        ¡Reservá tu salón para fin de año!
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
