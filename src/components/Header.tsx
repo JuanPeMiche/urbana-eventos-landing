@@ -4,6 +4,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 
 const navItems = [
   { label: 'Inicio', href: '/' },
+  { label: 'Galería', href: '/galeria' },
   { label: 'Cumpleaños', href: '/cumpleanos' },
   { label: 'Casamientos', href: '/casamientos' },
   { label: 'Empresariales', href: '/eventos-empresariales' },

@@ -1,7 +1,6 @@
 import { Header } from '@/components/Header';
 import { HeroSection } from '@/components/HeroSection';
 import { ServiceCards } from '@/components/ServiceCards';
-import { GallerySection } from '@/components/GallerySection';
 import { TrustSection } from '@/components/TrustSection';
 import { ContactSection } from '@/components/ContactSection';
 import { Footer } from '@/components/Footer';
@@ -14,7 +13,6 @@ const Index = () => {
       <main>
         <HeroSection />
         <ServiceCards />
-        <GallerySection />
         <TrustSection />
         <ContactSection selectedEventType={null} />
       </main>
