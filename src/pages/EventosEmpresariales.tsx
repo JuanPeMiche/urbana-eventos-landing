@@ -58,12 +58,12 @@ const EventosEmpresariales = () => {
             </h2>
 
             <h1 className="font-playfair text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6 leading-tight">
-              Salones para Eventos{' '}
-              <span className="gold-gradient-text">Empresariales</span>
+              {get('page_empresariales_title', 'Salones para Eventos Empresariales').split(' ').slice(0, 3).join(' ')}{' '}
+              <span className="gold-gradient-text">{get('page_empresariales_title', 'Salones para Eventos Empresariales').split(' ').slice(3).join(' ')}</span>
             </h1>
             
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Celebrá logros, fortalecé a tu equipo o lanzá productos en espacios profesionales diseñados para el éxito.
+              {get('page_empresariales_subtitle', 'Celebrá logros, fortalecé a tu equipo o lanzá productos en espacios profesionales diseñados para el éxito.')}
             </p>
 
             <button
@@ -99,15 +99,11 @@ const EventosEmpresariales = () => {
                 </div>
                 
                 <p className="text-muted-foreground text-lg mb-6">
-                  Ya sea una fiesta de fin de año, un team building, una presentación de producto 
-                  o una capacitación, contamos con salones que se adaptan a las necesidades 
-                  de tu empresa.
+                  {get('page_empresariales_text1', 'Ya sea una fiesta de fin de año, un team building, una presentación de producto o una capacitación, contamos con salones que se adaptan a las necesidades de tu empresa.')}
                 </p>
 
                 <p className="text-muted-foreground mb-8">
-                  Nuestros espacios aliados ofrecen tecnología audiovisual, servicios de catering, 
-                  estacionamiento y todo lo necesario para que tu evento corporativo sea un éxito. 
-                  Te asesoramos en cada detalle.
+                  {get('page_empresariales_text2', 'Nuestros espacios aliados ofrecen tecnología audiovisual, servicios de catering, estacionamiento y todo lo necesario para que tu evento corporativo sea un éxito. Te asesoramos en cada detalle.')}
                 </p>
 
                 <ul className="space-y-4">

@@ -59,6 +59,23 @@ const contentLabels: Record<string, string> = {
   event_cumpleanos: 'Descripción: Cumpleaños',
   event_aniversario: 'Descripción: Aniversario Empresarial',
   event_otro: 'Descripción: Otro Evento',
+  // Páginas de servicios
+  page_cumpleanos_title: 'Página Cumpleaños - Título',
+  page_cumpleanos_subtitle: 'Página Cumpleaños - Subtítulo',
+  page_cumpleanos_text1: 'Página Cumpleaños - Texto 1',
+  page_cumpleanos_text2: 'Página Cumpleaños - Texto 2',
+  page_casamientos_title: 'Página Casamientos - Título',
+  page_casamientos_subtitle: 'Página Casamientos - Subtítulo',
+  page_casamientos_text1: 'Página Casamientos - Texto 1',
+  page_casamientos_text2: 'Página Casamientos - Texto 2',
+  page_empresariales_title: 'Página Empresariales - Título',
+  page_empresariales_subtitle: 'Página Empresariales - Subtítulo',
+  page_empresariales_text1: 'Página Empresariales - Texto 1',
+  page_empresariales_text2: 'Página Empresariales - Texto 2',
+  page_despedidas_title: 'Página Despedidas - Título',
+  page_despedidas_subtitle: 'Página Despedidas - Subtítulo',
+  page_despedidas_text1: 'Página Despedidas - Texto 1',
+  page_despedidas_text2: 'Página Despedidas - Texto 2',
 };
 
 const serviceCategories = [
@@ -731,6 +748,97 @@ const AdminPanel = () => {
                       />
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Páginas de Servicios Section */}
+              <div className="bg-card border border-border rounded-xl p-6">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-primary rounded-full"></span>
+                  Páginas de Servicios
+                </h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Editá los textos de las páginas individuales de cada servicio (/cumpleanos, /casamientos, etc.)
+                </p>
+                
+                {/* Cumpleaños */}
+                <div className="border-b border-border pb-4 mb-4">
+                  <h4 className="text-sm font-medium text-primary mb-3">🎂 Página Cumpleaños</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {siteContent.filter(c => c.id.startsWith('page_cumpleanos_')).map(item => (
+                      <div key={item.id}>
+                        <label className="block text-sm text-muted-foreground mb-1">
+                          {contentLabels[item.id] || item.id}
+                        </label>
+                        <textarea
+                          value={item.content}
+                          onChange={(e) => handleContentChange(item.id, e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
+                          rows={item.id.includes('title') ? 1 : 3}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Casamientos */}
+                <div className="border-b border-border pb-4 mb-4">
+                  <h4 className="text-sm font-medium text-primary mb-3">💒 Página Casamientos</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {siteContent.filter(c => c.id.startsWith('page_casamientos_')).map(item => (
+                      <div key={item.id}>
+                        <label className="block text-sm text-muted-foreground mb-1">
+                          {contentLabels[item.id] || item.id}
+                        </label>
+                        <textarea
+                          value={item.content}
+                          onChange={(e) => handleContentChange(item.id, e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
+                          rows={item.id.includes('title') ? 1 : 3}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Empresariales */}
+                <div className="border-b border-border pb-4 mb-4">
+                  <h4 className="text-sm font-medium text-primary mb-3">🏢 Página Eventos Empresariales</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {siteContent.filter(c => c.id.startsWith('page_empresariales_')).map(item => (
+                      <div key={item.id}>
+                        <label className="block text-sm text-muted-foreground mb-1">
+                          {contentLabels[item.id] || item.id}
+                        </label>
+                        <textarea
+                          value={item.content}
+                          onChange={(e) => handleContentChange(item.id, e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
+                          rows={item.id.includes('title') ? 1 : 3}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Despedidas */}
+                <div>
+                  <h4 className="text-sm font-medium text-primary mb-3">🎉 Página Despedidas de Año</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {siteContent.filter(c => c.id.startsWith('page_despedidas_')).map(item => (
+                      <div key={item.id}>
+                        <label className="block text-sm text-muted-foreground mb-1">
+                          {contentLabels[item.id] || item.id}
+                        </label>
+                        <textarea
+                          value={item.content}
+                          onChange={(e) => handleContentChange(item.id, e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
+                          rows={item.id.includes('title') ? 1 : 3}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
