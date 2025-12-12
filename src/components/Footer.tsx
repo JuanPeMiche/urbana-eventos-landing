@@ -21,20 +21,30 @@ export const Footer = () => {
             </p>
           </div>
 
-          {/* Quick Links */}
+          {/* Services Links */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Navegación</h4>
+            <h4 className="font-semibold text-foreground mb-4">Servicios</h4>
             <ul className="space-y-2">
-              {['Inicio', 'Nosotros', 'Galeria', 'Servicios', 'Contacto'].map((item) => (
-                <li key={item}>
-                  <a
-                    href={`#${item.toLowerCase()}`}
-                    className="text-muted-foreground hover:text-primary transition-colors text-sm"
-                  >
-                    {item === 'Galeria' ? 'Galería' : item}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <Link to="/cumpleanos" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  Cumpleaños
+                </Link>
+              </li>
+              <li>
+                <Link to="/casamientos" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  Casamientos
+                </Link>
+              </li>
+              <li>
+                <Link to="/eventos-empresariales" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  Eventos Empresariales
+                </Link>
+              </li>
+              <li>
+                <Link to="/despedidas-de-ano" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  Despedidas de Año
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -83,9 +93,6 @@ export const Footer = () => {
               <Settings className="w-3 h-3" />
               Admin
             </Link>
-            <p className="text-muted-foreground text-xs">
-              Diseñado para conectarte con el evento perfecto
-            </p>
           </div>
         </div>
       </div>
