@@ -57,12 +57,12 @@ const DespedidasDeAno = () => {
             </h2>
 
             <h1 className="font-playfair text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6 leading-tight">
-              Salones para{' '}
-              <span className="gold-gradient-text">Despedidas de Año</span>
+              {get('page_despedidas_title', 'Salones para Despedidas de Año').split(' ').slice(0, 2).join(' ')}{' '}
+              <span className="gold-gradient-text">{get('page_despedidas_title', 'Salones para Despedidas de Año').split(' ').slice(2).join(' ')}</span>
             </h1>
             
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Cerrá el año con estilo junto a tu equipo. Te conectamos con los mejores salones para tu fiesta de fin de año.
+              {get('page_despedidas_subtitle', 'Cerrá el año con estilo junto a tu equipo. Te conectamos con los mejores salones para tu fiesta de fin de año.')}
             </p>
 
             <button
@@ -98,15 +98,11 @@ const DespedidasDeAno = () => {
                 </div>
                 
                 <p className="text-muted-foreground text-lg mb-6">
-                  Las despedidas de año son el momento perfecto para agradecer a tu equipo 
-                  y celebrar los logros del año. Te ayudamos a encontrar el salón ideal 
-                  para que sea una noche memorable.
+                  {get('page_despedidas_text1', 'Las despedidas de año son el momento perfecto para agradecer a tu equipo y celebrar los logros del año. Te ayudamos a encontrar el salón ideal para que sea una noche memorable.')}
                 </p>
 
                 <p className="text-muted-foreground mb-8">
-                  Desde fiestas íntimas hasta grandes celebraciones empresariales, 
-                  contamos con opciones para todos los presupuestos y estilos. 
-                  Nuestros salones aliados ofrecen todo lo necesario para cerrar el año a lo grande.
+                  {get('page_despedidas_text2', 'Desde fiestas íntimas hasta grandes celebraciones empresariales, contamos con opciones para todos los presupuestos y estilos. Nuestros salones aliados ofrecen todo lo necesario para cerrar el año a lo grande.')}
                 </p>
 
                 <ul className="space-y-4">

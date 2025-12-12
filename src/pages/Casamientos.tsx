@@ -58,12 +58,12 @@ const Casamientos = () => {
             </h2>
 
             <h1 className="font-playfair text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6 leading-tight">
-              Salones para Casamientos y{' '}
-              <span className="gold-gradient-text">Bodas en Montevideo</span>
+              {get('page_casamientos_title', 'Salones para Casamientos y Bodas').split(' ').slice(0, 3).join(' ')}{' '}
+              <span className="gold-gradient-text">{get('page_casamientos_title', 'Salones para Casamientos y Bodas').split(' ').slice(3).join(' ')}</span>
             </h1>
             
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              El día más especial de tu vida merece el salón perfecto. Te conectamos con los mejores espacios para tu boda.
+              {get('page_casamientos_subtitle', 'El día más especial de tu vida merece el salón perfecto. Te conectamos con los mejores espacios para tu boda.')}
             </p>
 
             <button
@@ -99,15 +99,11 @@ const Casamientos = () => {
                 </div>
                 
                 <p className="text-muted-foreground text-lg mb-6">
-                  Sabemos que tu casamiento es un día único e irrepetible. Por eso trabajamos 
-                  con los mejores salones de Montevideo para ofrecerte opciones que se adapten 
-                  a tu estilo, presupuesto y cantidad de invitados.
+                  {get('page_casamientos_text1', 'Sabemos que tu casamiento es un día único e irrepetible. Por eso trabajamos con los mejores salones de Montevideo para ofrecerte opciones que se adapten a tu estilo, presupuesto y cantidad de invitados.')}
                 </p>
 
                 <p className="text-muted-foreground mb-8">
-                  Desde salones clásicos con jardines hasta espacios modernos con vistas 
-                  panorámicas, te asesoramos para encontrar el lugar donde celebrar el amor. 
-                  Dejanos conocer tu visión y hacemos el resto.
+                  {get('page_casamientos_text2', 'Desde salones clásicos con jardines hasta espacios modernos con vistas panorámicas, te asesoramos para encontrar el lugar donde celebrar el amor. Dejanos conocer tu visión y hacemos el resto.')}
                 </p>
 
                 <ul className="space-y-4">

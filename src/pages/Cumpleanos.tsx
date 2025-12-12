@@ -58,12 +58,12 @@ const Cumpleanos = () => {
             </h2>
 
             <h1 className="font-playfair text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-foreground mb-6 leading-tight">
-              Salones para Cumpleaños de 15 y{' '}
-              <span className="gold-gradient-text">Fiestas Privadas</span>
+              {get('page_cumpleanos_title', 'Salones para Cumpleaños de 15 y Fiestas Privadas').split(' ').slice(0, 4).join(' ')}{' '}
+              <span className="gold-gradient-text">{get('page_cumpleanos_title', 'Salones para Cumpleaños de 15 y Fiestas Privadas').split(' ').slice(4).join(' ')}</span>
             </h1>
             
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Festejá a lo grande en un ambiente exclusivo. Te conectamos con el salón perfecto para tu cumpleaños.
+              {get('page_cumpleanos_subtitle', 'Festejá a lo grande en un ambiente exclusivo. Te conectamos con el salón perfecto para tu cumpleaños.')}
             </p>
 
             <button
@@ -99,15 +99,11 @@ const Cumpleanos = () => {
                 </div>
                 
                 <p className="text-muted-foreground text-lg mb-6">
-                  Ya sea un cumpleaños de 15 con todo el glamour o una fiesta privada íntima, 
-                  te ayudamos a encontrar el espacio ideal. Trabajamos con salones que se adaptan 
-                  a tu estilo y presupuesto.
+                  {get('page_cumpleanos_text1', 'Ya sea un cumpleaños de 15 con todo el glamour o una fiesta privada íntima, te ayudamos a encontrar el espacio ideal. Trabajamos con salones que se adaptan a tu estilo y presupuesto.')}
                 </p>
 
                 <p className="text-muted-foreground mb-8">
-                  Nuestros salones aliados ofrecen desde espacios modernos con pista de baile 
-                  hasta ambientes más relajados con áreas de lounge. Te asesoramos en cada paso 
-                  para que tu celebración sea inolvidable.
+                  {get('page_cumpleanos_text2', 'Nuestros salones aliados ofrecen desde espacios modernos con pista de baile hasta ambientes más relajados con áreas de lounge. Te asesoramos en cada paso para que tu celebración sea inolvidable.')}
                 </p>
 
                 <ul className="space-y-4">
