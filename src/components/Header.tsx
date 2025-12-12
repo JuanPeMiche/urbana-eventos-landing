@@ -1,21 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 
 const navItems = [
-  { label: 'Inicio', href: '#inicio' },
-  { label: 'Nosotros', href: '#nosotros' },
-  { label: 'Galería', href: '#galeria' },
-  { label: 'Servicios', href: '#servicios' },
-  { label: 'Contacto', href: '#contacto' },
+  { label: 'Inicio', href: '/' },
+  { label: 'Cumpleaños', href: '/cumpleanos' },
+  { label: 'Casamientos', href: '/casamientos' },
+  { label: 'Empresariales', href: '/eventos-empresariales' },
+  { label: 'Despedidas', href: '/despedidas-de-ano' },
 ];
 
 export const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
-  const isHomePage = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,25 +23,6 @@ export const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleNavClick = (href: string) => {
-    if (!isHomePage) {
-      // Navigate to home and then scroll
-      navigate('/');
-      setTimeout(() => {
-        const element = document.querySelector(href);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    } else {
-      const element = document.querySelector(href);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-    setIsMobileMenuOpen(false);
-  };
-
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -52,47 +31,47 @@ export const Header = () => {
     >
       <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo */}
-        <a
-          href="/"
-          onClick={(e) => {
-            e.preventDefault();
-            handleNavClick('#inicio');
-          }}
-          className="font-playfair text-2xl md:text-3xl font-semibold text-white"
+        <Link
+          to="/"
+          className="font-playfair text-xl sm:text-2xl md:text-3xl font-semibold gold-gradient-text"
         >
           Urbana Eventos
-        </a>
+        </Link>
 
         {/* Desktop Navigation */}
-        <ul className="hidden md:flex items-center gap-8">
+        <ul className="hidden lg:flex items-center gap-6">
           {navItems.map((item) => (
             <li key={item.href}>
-              <a
-                href={item.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavClick(item.href);
-                }}
-                className="nav-link text-sm uppercase tracking-wider"
+              <Link
+                to={item.href}
+                className={`nav-link text-sm uppercase tracking-wider ${
+                  location.pathname === item.href ? 'text-primary' : ''
+                }`}
               >
                 {item.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
 
-        {/* Admin Button - Desktop */}
-        <a
-          href="/admin"
-          className="hidden md:block btn-gold text-sm"
+        {/* Contact Button - Desktop */}
+        <Link
+          to="/#contacto"
+          onClick={(e) => {
+            if (location.pathname === '/') {
+              e.preventDefault();
+              document.querySelector('#contacto')?.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+          className="hidden lg:block btn-gold text-sm"
         >
-          Ingresar como Administrador
-        </a>
+          Contacto
+        </Link>
 
         {/* Mobile Menu Button */}
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden text-foreground p-2"
+          className="lg:hidden text-foreground p-2"
           aria-label="Toggle menu"
         >
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -101,29 +80,29 @@ export const Header = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-background/98 backdrop-blur-lg border-t border-border">
+        <div className="lg:hidden bg-background/98 backdrop-blur-lg border-t border-border">
           <ul className="container mx-auto px-4 py-6 flex flex-col gap-4">
             {navItems.map((item) => (
               <li key={item.href}>
-                <a
-                  href={item.href}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick(item.href);
-                  }}
-                  className="nav-link block py-2 text-lg"
+                <Link
+                  to={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`nav-link block py-2 text-lg ${
+                    location.pathname === item.href ? 'text-primary' : ''
+                  }`}
                 >
                   {item.label}
-                </a>
+                </Link>
               </li>
             ))}
             <li className="pt-4">
-              <a
-                href="/admin"
+              <Link
+                to="/#contacto"
+                onClick={() => setIsMobileMenuOpen(false)}
                 className="btn-gold block text-center"
               >
-                Ingresar como Administrador
-              </a>
+                Contacto
+              </Link>
             </li>
           </ul>
         </div>
