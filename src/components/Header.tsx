@@ -6,6 +6,7 @@ const navItems = [
   { label: 'Inicio', href: '/' },
   { label: 'Galería', href: '/galeria' },
   { label: 'Cumpleaños', href: '/cumpleanos' },
+  { label: 'Infantiles', href: '/cumpleanos-infantiles' },
   { label: 'Casamientos', href: '/casamientos' },
   { label: 'Empresariales', href: '/eventos-empresariales' },
   { label: 'Despedidas', href: '/despedidas-de-ano' },
