@@ -497,9 +497,7 @@ const AdminPanel = () => {
         <div className="w-full max-w-md">
           <div className="bg-card border border-border rounded-xl p-8">
             <div className="text-center mb-8">
-              <div className="inline-block bg-foreground text-background px-6 py-3 rounded-lg mb-4">
-                <span className="font-playfair text-lg font-bold tracking-wide">URBANA EVENTOS</span>
-              </div>
+              <span className="font-playfair text-2xl font-bold tracking-wide text-primary">URBANA EVENTOS</span>
               <h1 className="font-playfair text-2xl font-semibold text-foreground mb-2">Panel de Administración</h1>
               <p className="text-muted-foreground text-sm">Ingresá tus credenciales para continuar</p>
             </div>
@@ -562,9 +560,7 @@ const AdminPanel = () => {
       <header className="bg-card border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="bg-foreground text-background px-4 py-2 rounded-lg">
-              <span className="font-playfair text-sm font-bold tracking-wide">URBANA EVENTOS</span>
-            </div>
+            <span className="font-playfair text-lg font-bold tracking-wide text-primary">URBANA EVENTOS</span>
             <span className="text-muted-foreground text-sm hidden md:inline">Admin</span>
           </div>
           <div className="flex gap-3">
@@ -617,7 +613,7 @@ const AdminPanel = () => {
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Layers className="w-4 h-4" /> Servicios ({serviceImages.length})
+              <Layers className="w-4 h-4" /> Servicios ({serviceCategories.length})
             </button>
             <button
               onClick={() => setActiveTab('leads')}
