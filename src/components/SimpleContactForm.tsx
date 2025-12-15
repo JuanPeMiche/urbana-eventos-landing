@@ -10,6 +10,7 @@ export type EventType =
   | 'Presentación de producto'
   | 'Capacitación'
   | 'Cumpleaños privado'
+  | 'Cumpleaños infantil'
   | 'Aniversario empresarial'
   | 'Otro';
 
@@ -20,6 +21,7 @@ const EVENT_TYPE_OPTIONS: EventType[] = [
   'Presentación de producto',
   'Capacitación',
   'Cumpleaños privado',
+  'Cumpleaños infantil',
   'Aniversario empresarial',
   'Otro',
 ];
