@@ -64,6 +64,10 @@ const contentLabels: Record<string, string> = {
   page_cumpleanos_subtitle: 'Página Cumpleaños - Subtítulo',
   page_cumpleanos_text1: 'Página Cumpleaños - Texto 1',
   page_cumpleanos_text2: 'Página Cumpleaños - Texto 2',
+  page_infantiles_title: 'Página Infantiles - Título',
+  page_infantiles_subtitle: 'Página Infantiles - Subtítulo',
+  page_infantiles_text1: 'Página Infantiles - Texto 1',
+  page_infantiles_text2: 'Página Infantiles - Texto 2',
   page_casamientos_title: 'Página Casamientos - Título',
   page_casamientos_subtitle: 'Página Casamientos - Subtítulo',
   page_casamientos_text1: 'Página Casamientos - Texto 1',
@@ -80,6 +84,7 @@ const contentLabels: Record<string, string> = {
 
 const serviceCategories = [
   { id: 'cumpleanos', label: 'Cumpleaños' },
+  { id: 'infantiles', label: 'Infantiles' },
   { id: 'casamientos', label: 'Casamientos' },
   { id: 'empresariales', label: 'Empresariales' },
   { id: 'despedidas', label: 'Despedidas' },
