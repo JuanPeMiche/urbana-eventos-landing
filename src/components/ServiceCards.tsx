@@ -2,6 +2,7 @@ import { Cake, Heart, Briefcase, PartyPopper, Baby } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveImageUrl } from '@/lib/imageResolver';
 
 // Import local fallbacks
 import eventWedding from '@/assets/event-wedding.jpg';
@@ -76,7 +77,8 @@ export const ServiceCards = () => {
         const imageMap: Record<string, string> = {};
         data.forEach((img) => {
           if (img.category && !imageMap[img.category]) {
-            imageMap[img.category] = img.image_url;
+            // Resolve asset paths to actual URLs
+            imageMap[img.category] = resolveImageUrl(img.image_url);
           }
         });
         setServiceImages(imageMap);

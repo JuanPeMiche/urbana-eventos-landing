@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveImageUrl } from '@/lib/imageResolver';
 
 export const useServiceImage = (category: string) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -15,10 +16,11 @@ export const useServiceImage = (category: string) => {
         .eq('is_active', true)
         .order('display_order', { ascending: true })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
-        setImageUrl(data.image_url);
+        // Resolve asset paths to actual URLs
+        setImageUrl(resolveImageUrl(data.image_url));
       }
       setIsLoading(false);
     };
