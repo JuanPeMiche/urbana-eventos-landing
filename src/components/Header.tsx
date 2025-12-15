@@ -92,8 +92,8 @@ export const Header = () => {
           </li>
         </ul>
 
-        {/* Contact Button - Desktop */}
-        <div className="hidden lg:block">
+        {/* Contact & Admin - Desktop */}
+        <div className="hidden lg:flex items-center gap-4">
           <Link
             to="/#contacto"
             onClick={(e) => {
@@ -105,6 +105,12 @@ export const Header = () => {
             className="btn-gold text-sm px-6 py-2"
           >
             Contacto
+          </Link>
+          <Link
+            to="/admin"
+            className="text-foreground/60 hover:text-primary transition-colors text-sm font-medium tracking-wide"
+          >
+            Admin
           </Link>
         </div>
 
@@ -153,13 +159,20 @@ export const Header = () => {
               ))}
             </li>
             
-            <li className="pt-4 border-t border-border mt-2">
+            <li className="pt-4 border-t border-border mt-2 flex flex-col gap-3">
               <Link
                 to="/#contacto"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="btn-gold block text-center"
               >
                 Contacto
+              </Link>
+              <Link
+                to="/admin"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-foreground/60 hover:text-primary transition-colors text-center text-sm"
+              >
+                Admin
               </Link>
             </li>
           </ul>
