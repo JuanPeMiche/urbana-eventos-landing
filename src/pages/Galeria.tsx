@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveImageUrl } from '@/lib/imageResolver';
 
 interface GalleryImage {
   id: string;
@@ -37,7 +38,12 @@ const Galeria = () => {
       .order('display_order', { ascending: true });
 
     if (!error && data) {
-      setImages(data);
+      // Resolve asset paths to actual URLs
+      const resolvedImages = data.map(img => ({
+        ...img,
+        image_url: resolveImageUrl(img.image_url)
+      }));
+      setImages(resolvedImages);
     }
   };
 
