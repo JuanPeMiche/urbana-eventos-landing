@@ -1,16 +1,39 @@
+import { trackConversion, TrackingSection } from '@/lib/googleAdsTracking';
+
 const WHATSAPP_URL = 'https://api.whatsapp.com/send/?phone=%2B598096303705&text&type=phone_number&app_absent=0';
 
-export const WhatsAppFloat = () => {
+interface WhatsAppFloatProps {
+  /**
+   * Sección para tracking de Google Ads
+   * Por defecto usa 'general', pero puede especificarse por página
+   */
+  trackingSection?: TrackingSection;
+}
+
+export const WhatsAppFloat = ({ trackingSection = 'general' }: WhatsAppFloatProps) => {
+  const handleClick = () => {
+    // Disparar conversión de Google Ads antes de abrir WhatsApp
+    trackConversion(trackingSection, 'wpp');
+  };
+
   return (
     <a
       href={WHATSAPP_URL}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={handleClick}
       className="fixed bottom-6 right-6 z-50 transition-transform duration-300 hover:scale-110"
       aria-label="Contactar por WhatsApp"
-      /* GOOGLE TAG WHATSAPP FLOAT BUTTON */
-      data-google-conversion-id=""
-      data-google-conversion-label=""
+      /* 
+        GOOGLE ADS TRACKING - WhatsApp Flotante
+        ID: wpp-float-{trackingSection}
+        data-conversion-name: {trackingSection}_wpp_float
+      */
+      id={`wpp-float-${trackingSection}`}
+      data-conversion-name={`${trackingSection}_wpp_float`}
+      data-section={trackingSection}
+      data-channel="whatsapp"
+      data-element="float-button"
     >
       {/* Official WhatsApp Logo */}
       <svg 

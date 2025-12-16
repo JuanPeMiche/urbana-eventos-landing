@@ -151,14 +151,18 @@ const DespedidasDeAno = () => {
               </div>
               
               <div className="bg-background rounded-xl p-6 md:p-8 border border-border">
-                <SimpleContactForm preselectedEventType="Despedida de año" showEventTypeSelector={false} />
+                <SimpleContactForm 
+                  preselectedEventType="Despedida de año" 
+                  showEventTypeSelector={false} 
+                  trackingSection="despedidas-de-ano"
+                />
               </div>
             </div>
           </div>
         </section>
       </main>
       <Footer />
-      <WhatsAppFloat />
+      <WhatsAppFloat trackingSection="despedidas-de-ano" />
     </>
   );
 };
