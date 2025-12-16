@@ -141,14 +141,18 @@ const EventosEmpresariales = () => {
               </div>
               
               <div className="bg-background rounded-xl p-6 md:p-8 border border-border">
-                <SimpleContactForm preselectedEventType="Fiesta empresarial" showEventTypeSelector={true} />
+                <SimpleContactForm 
+                  preselectedEventType="Fiesta empresarial" 
+                  showEventTypeSelector={true} 
+                  trackingSection="eventos-empresariales"
+                />
               </div>
             </div>
           </div>
         </section>
       </main>
       <Footer />
-      <WhatsAppFloat />
+      <WhatsAppFloat trackingSection="eventos-empresariales" />
     </>
   );
 };

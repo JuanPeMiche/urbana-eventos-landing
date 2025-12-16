@@ -141,14 +141,18 @@ const CumpleanosInfantiles = () => {
               </div>
               
               <div className="bg-background rounded-xl p-6 md:p-8 border border-border">
-                <SimpleContactForm preselectedEventType="Cumpleaños infantil" showEventTypeSelector={false} />
+                <SimpleContactForm 
+                  preselectedEventType="Cumpleaños infantil" 
+                  showEventTypeSelector={false} 
+                  trackingSection="cumpleanos-infantiles"
+                />
               </div>
             </div>
           </div>
         </section>
       </main>
       <Footer />
-      <WhatsAppFloat />
+      <WhatsAppFloat trackingSection="cumpleanos-infantiles" />
     </>
   );
 };

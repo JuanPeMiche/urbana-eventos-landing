@@ -141,14 +141,18 @@ const Casamientos = () => {
               </div>
               
               <div className="bg-background rounded-xl p-6 md:p-8 border border-border">
-                <SimpleContactForm preselectedEventType="Casamiento" showEventTypeSelector={false} />
+                <SimpleContactForm 
+                  preselectedEventType="Casamiento" 
+                  showEventTypeSelector={false} 
+                  trackingSection="casamientos"
+                />
               </div>
             </div>
           </div>
         </section>
       </main>
       <Footer />
-      <WhatsAppFloat />
+      <WhatsAppFloat trackingSection="casamientos" />
     </>
   );
 };

@@ -5,19 +5,26 @@ import { TrustSection } from '@/components/TrustSection';
 import { ContactSection } from '@/components/ContactSection';
 import { Footer } from '@/components/Footer';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
+import { useUrlSection } from '@/hooks/useUrlSection';
 
 const Index = () => {
+  // Permite scroll automático desde URL: /?section=contacto
+  useUrlSection();
+
   return (
     <>
       <Header />
       <main>
         <HeroSection />
-        <ServiceCards />
+        {/* Sección de servicios con ID para landing desde Google Ads */}
+        <section id="servicios">
+          <ServiceCards />
+        </section>
         <TrustSection />
         <ContactSection selectedEventType={null} />
       </main>
       <Footer />
-      <WhatsAppFloat />
+      <WhatsAppFloat trackingSection="general" />
     </>
   );
 };

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Send, Mail } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { trackConversion, TrackingSection } from '@/lib/googleAdsTracking';
 
 export type EventType = 
   | 'Casamiento'
@@ -29,6 +30,12 @@ const EVENT_TYPE_OPTIONS: EventType[] = [
 interface SimpleContactFormProps {
   preselectedEventType?: EventType;
   showEventTypeSelector?: boolean;
+  /**
+   * ID de sección para tracking de Google Ads
+   * Valores válidos: casamientos, cumpleanos-privados, cumpleanos-infantiles, 
+   * eventos-empresariales, despedidas-de-ano, general
+   */
+  trackingSection?: TrackingSection;
 }
 
 const WHATSAPP_NUMBER = '+598096303705';
@@ -57,7 +64,11 @@ const DEPARTAMENTOS = [
   'Treinta y Tres',
 ];
 
-export const SimpleContactForm = ({ preselectedEventType, showEventTypeSelector = true }: SimpleContactFormProps) => {
+export const SimpleContactForm = ({ 
+  preselectedEventType, 
+  showEventTypeSelector = true,
+  trackingSection = 'general'
+}: SimpleContactFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     nombre: '',
@@ -133,13 +144,12 @@ export const SimpleContactForm = ({ preselectedEventType, showEventTypeSelector 
         console.error('Error sending confirmation email:', emailError);
       }
 
-      // Track conversion - Google Ads placeholder
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'conversion', {
-          event_category: 'lead',
-          event_label: formData.tipoEvento,
-        });
-      }
+      // ============================================================
+      // GOOGLE ADS CONVERSION TRACKING
+      // Dispara la conversión correcta según la sección y canal
+      // ============================================================
+      const channel = contactMethod === 'whatsapp' ? 'wpp' : 'mail';
+      trackConversion(trackingSection, channel);
 
       if (contactMethod === 'whatsapp') {
         const message = `Hola, soy ${formData.nombre}. Quiero organizar un *${formData.tipoEvento}* ${formData.departamento ? `en ${formData.departamento}` : ''} para ${formData.invitados || 'cantidad a definir'} personas, el ${formData.fecha || 'fecha a definir'}. Mis datos de contacto son ${formData.telefono} / ${formData.email}. ${formData.mensaje ? `Mensaje adicional: ${formData.mensaje}` : ''}`;
@@ -347,26 +357,38 @@ export const SimpleContactForm = ({ preselectedEventType, showEventTypeSelector 
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* 
+          BOTÓN WHATSAPP - TRACKING
+          ID: wpp-{trackingSection}
+          data-conversion-name: {trackingSection}_wpp
+        */}
         <button
           type="button"
+          id={`wpp-${trackingSection}`}
           onClick={(e) => handleSubmit(e, 'whatsapp')}
           disabled={isSubmitting}
           className="bg-[#25D366] text-white font-semibold px-6 py-4 rounded-lg transition-all duration-300 hover:bg-[#20bd5a] hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
-          /* GOOGLE TAG FORM WHATSAPP BUTTON */
-          data-google-conversion-id=""
-          data-google-conversion-label=""
+          data-conversion-name={`${trackingSection}_wpp`}
+          data-section={trackingSection}
+          data-channel="whatsapp"
         >
           <Send className="w-5 h-5" />
           {isSubmitting ? 'Enviando...' : 'Contactar por WhatsApp'}
         </button>
+        {/* 
+          BOTÓN EMAIL - TRACKING
+          ID: mail-{trackingSection}
+          data-conversion-name: {trackingSection}_mail
+        */}
         <button
           type="button"
+          id={`mail-${trackingSection}`}
           onClick={(e) => handleSubmit(e, 'gmail')}
           disabled={isSubmitting}
           className="btn-gold flex items-center justify-center gap-2 py-4 disabled:opacity-50"
-          /* GOOGLE TAG FORM EMAIL BUTTON */
-          data-google-conversion-id=""
-          data-google-conversion-label=""
+          data-conversion-name={`${trackingSection}_mail`}
+          data-section={trackingSection}
+          data-channel="email"
         >
           <Mail className="w-5 h-5" />
           {isSubmitting ? 'Enviando...' : 'Contactar por Email'}

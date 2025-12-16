@@ -3,6 +3,7 @@ import { Send, Mail } from 'lucide-react';
 import { EventType } from './ServicesSection';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { trackConversion, TrackingSection } from '@/lib/googleAdsTracking';
 
 const EVENT_TYPE_OPTIONS: EventType[] = [
   'Casamiento',
@@ -17,6 +18,11 @@ const EVENT_TYPE_OPTIONS: EventType[] = [
 
 interface ContactFormProps {
   selectedEventType: EventType | null;
+  /**
+   * Sección para tracking de Google Ads
+   * Por defecto usa 'general' para el formulario de la home
+   */
+  trackingSection?: TrackingSection;
 }
 
 const WHATSAPP_NUMBER = '+598096303705';
@@ -45,7 +51,7 @@ const DEPARTAMENTOS = [
   'Treinta y Tres',
 ];
 
-export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
+export const ContactForm = ({ selectedEventType, trackingSection = 'general' }: ContactFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     nombre: '',
@@ -121,13 +127,12 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
         console.error('Error sending confirmation email:', emailError);
       }
 
-      // Track conversion - Google Ads placeholder
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'conversion', {
-          event_category: 'lead',
-          event_label: formData.tipoEvento,
-        });
-      }
+      // ============================================================
+      // GOOGLE ADS CONVERSION TRACKING
+      // Dispara la conversión correcta según la sección y canal
+      // ============================================================
+      const channel = contactMethod === 'whatsapp' ? 'wpp' : 'mail';
+      trackConversion(trackingSection, channel);
 
       if (contactMethod === 'whatsapp') {
         const message = `Hola, soy ${formData.nombre}. Quiero organizar un *${formData.tipoEvento}* ${formData.departamento ? `en ${formData.departamento}` : ''} para ${formData.invitados || 'cantidad a definir'} personas, el ${formData.fecha || 'fecha a definir'}. Mis datos de contacto son ${formData.telefono} / ${formData.email}. ${formData.mensaje ? `Mensaje adicional: ${formData.mensaje}` : ''}`;
@@ -321,20 +326,38 @@ export const ContactForm = ({ selectedEventType }: ContactFormProps) => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* 
+          BOTÓN WHATSAPP - TRACKING
+          ID: wpp-{trackingSection}
+          data-conversion-name: {trackingSection}_wpp
+        */}
         <button
           type="button"
+          id={`wpp-${trackingSection}`}
           onClick={(e) => handleSubmit(e, 'whatsapp')}
           disabled={isSubmitting}
           className="bg-[#25D366] text-white font-semibold px-6 py-4 rounded-lg transition-all duration-300 hover:bg-[#20bd5a] hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+          data-conversion-name={`${trackingSection}_wpp`}
+          data-section={trackingSection}
+          data-channel="whatsapp"
         >
           <Send className="w-5 h-5" />
           {isSubmitting ? 'Enviando...' : 'Contactar por WhatsApp'}
         </button>
+        {/* 
+          BOTÓN EMAIL - TRACKING
+          ID: mail-{trackingSection}
+          data-conversion-name: {trackingSection}_mail
+        */}
         <button
           type="button"
+          id={`mail-${trackingSection}`}
           onClick={(e) => handleSubmit(e, 'gmail')}
           disabled={isSubmitting}
           className="btn-gold flex items-center justify-center gap-2 py-4 disabled:opacity-50"
+          data-conversion-name={`${trackingSection}_mail`}
+          data-section={trackingSection}
+          data-channel="email"
         >
           <Mail className="w-5 h-5" />
           {isSubmitting ? 'Enviando...' : 'Contactar por Email'}
@@ -349,26 +372,21 @@ interface QuickContactBlockProps {
   eventType: EventType;
   title: string;
   description: string;
-  googleTagId?: string;
+  trackingSection?: TrackingSection;
 }
 
 export const QuickContactBlock = ({
   eventType,
   title,
   description,
-  googleTagId,
+  trackingSection = 'general',
 }: QuickContactBlockProps) => {
   const handleWhatsAppClick = () => {
     const message = `Hola, me interesa organizar un ${eventType}. ¿Podrían asesorarme?`;
     const whatsappUrl = `${WHATSAPP_BASE_URL}&text=${encodeURIComponent(message)}`;
 
     // Track specific conversion
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'conversion', {
-        event_category: 'lead',
-        event_label: eventType,
-      });
-    }
+    trackConversion(trackingSection, 'wpp');
 
     window.open(whatsappUrl, '_blank');
   };
@@ -379,10 +397,12 @@ export const QuickContactBlock = ({
       <p className="text-muted-foreground text-sm mb-4">{description}</p>
       <button
         onClick={handleWhatsAppClick}
+        id={`quick-wpp-${trackingSection}`}
         className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-lg font-medium transition-all hover:bg-[#20bd5a]"
         data-event-type={eventType}
-        data-google-conversion-id={googleTagId || ''}
-        data-google-conversion-label=""
+        data-conversion-name={`${trackingSection}_wpp_quick`}
+        data-section={trackingSection}
+        data-channel="whatsapp"
       >
         <Send className="w-5 h-5" />
         WhatsApp {eventType}

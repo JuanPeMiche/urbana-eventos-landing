@@ -36,8 +36,9 @@
 
     <!-- 
       ========================================
-      GOOGLE TAG MANAGER - REPLACE WITH YOUR GTM ID
+      GOOGLE TAG MANAGER (OPCIONAL) - REPLACE WITH YOUR GTM ID
       ========================================
+      Si usás GTM, descomentar este bloque y reemplazar GTM-XXXXXXXX
     -->
     <!-- Google Tag Manager (Head) -->
     <!--
@@ -51,9 +52,25 @@
 
     <!-- 
       ========================================
-      GOOGLE ADS CONVERSION TRACKING - REPLACE WITH YOUR CONVERSION ID
+      GOOGLE ADS CONVERSION TRACKING - PEGAR AQUÍ SCRIPT GOOGLE TAG
       ========================================
+      
+      INSTRUCCIONES:
+      1. Descomentar el bloque de abajo
+      2. Reemplazar AW-XXXXXXXXXX con tu Google Ads Conversion ID
+      3. Las conversiones específicas por sección se configuran en:
+         src/lib/googleAdsTracking.ts
+      
+      EJEMPLO con ID real:
+      <script async src="https://www.googletagmanager.com/gtag/js?id=AW-123456789"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-123456789');
+      </script>
     -->
+    <!-- DESCOMENTAR Y REEMPLAZAR AW-XXXXXXXXXX -->
     <!--
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-XXXXXXXXXX"></script>
     <script>
