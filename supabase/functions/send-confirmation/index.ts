@@ -72,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </p>
                 
                 <div style="text-align: center; margin-top: 30px;">
-                  <a href="https://api.whatsapp.com/send/?phone=%2B598096303705&text=Hola,%20hice%20una%20consulta%20por%20el%20formulario&type=phone_number&app_absent=0" 
+                  <a href="https://api.whatsapp.com/send/?phone=%2B59897979905&text=Hola,%20hice%20una%20consulta%20por%20el%20formulario&type=phone_number&app_absent=0" 
                      style="display: inline-block; background: linear-gradient(135deg, #c9a553, #d4b366); color: #141414; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                     Contactar por WhatsApp
                   </a>
@@ -85,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
                   Urbana Eventos - Gestión de salones y eventos
                 </p>
                 <p style="color: #666; font-size: 12px; margin: 10px 0 0;">
-                  Montevideo, Uruguay | +598 96 303 705
+                  Montevideo, Uruguay | +598 97 979 905
                 </p>
               </div>
             </div>
@@ -100,7 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send notification email to the business
     const notificationEmail = await resend.emails.send({
       from: "Urbana Eventos <onboarding@resend.dev>",
-      to: ["facudasilvaa@gmail.com"],
+      to: ["afrutos.seguridad@gmail.com"],
       subject: `Nueva consulta: ${data.tipoEvento} - ${data.nombre}`,
       html: `
         <!DOCTYPE html>
