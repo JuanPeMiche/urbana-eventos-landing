@@ -1,16 +1,28 @@
 import { trackConversion, TrackingSection } from '@/lib/googleAdsTracking';
-
-const WHATSAPP_URL = 'https://api.whatsapp.com/send/?phone=%2B59897979905&text&type=phone_number&app_absent=0';
+import { getWhatsAppUrl } from '@/lib/contactConstants';
 
 interface WhatsAppFloatProps {
-  /**
-   * Sección para tracking de Google Ads
-   * Por defecto usa 'general', pero puede especificarse por página
-   */
   trackingSection?: TrackingSection;
+  serviceTag?: string;
 }
 
-export const WhatsAppFloat = ({ trackingSection = 'general' }: WhatsAppFloatProps) => {
+// Mapeo de trackingSection a serviceTag
+const trackingToServiceTag: Record<TrackingSection, string> = {
+  'casamientos': 'Casamientos',
+  'cumpleanos-privados': 'Cumpleaños',
+  'cumpleanos-infantiles': 'Cumpleaños infantiles',
+  'eventos-empresariales': 'Eventos empresariales',
+  'despedidas-de-ano': 'Despedidas de año',
+  'general': 'Home',
+};
+
+export const WhatsAppFloat = ({ 
+  trackingSection = 'general',
+  serviceTag 
+}: WhatsAppFloatProps) => {
+  const effectiveServiceTag = serviceTag || trackingToServiceTag[trackingSection] || 'Home';
+  const whatsappUrl = getWhatsAppUrl(effectiveServiceTag);
+
   const handleClick = () => {
     // Disparar conversión de Google Ads antes de abrir WhatsApp
     trackConversion(trackingSection, 'wpp');
@@ -18,17 +30,12 @@ export const WhatsAppFloat = ({ trackingSection = 'general' }: WhatsAppFloatProp
 
   return (
     <a
-      href={WHATSAPP_URL}
+      href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
       className="fixed bottom-6 right-6 z-50 transition-transform duration-300 hover:scale-110"
       aria-label="Contactar por WhatsApp"
-      /* 
-        GOOGLE ADS TRACKING - WhatsApp Flotante
-        ID: wpp-float-{trackingSection}
-        data-conversion-name: {trackingSection}_wpp_float
-      */
       id={`wpp-float-${trackingSection}`}
       data-conversion-name={`${trackingSection}_wpp_float`}
       data-section={trackingSection}

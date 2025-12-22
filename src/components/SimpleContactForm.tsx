@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Send, Mail } from 'lucide-react';
+import { Send, Mail, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { trackConversion, TrackingSection } from '@/lib/googleAdsTracking';
+import { CONTACT_PHONE, CONTACT_EMAIL, WHATSAPP_BASE_URL, SERVICE_TAGS } from '@/lib/contactConstants';
 
 export type EventType = 
   | 'Casamiento'
@@ -30,17 +31,9 @@ const EVENT_TYPE_OPTIONS: EventType[] = [
 interface SimpleContactFormProps {
   preselectedEventType?: EventType;
   showEventTypeSelector?: boolean;
-  /**
-   * ID de sección para tracking de Google Ads
-   * Valores válidos: casamientos, cumpleanos-privados, cumpleanos-infantiles, 
-   * eventos-empresariales, despedidas-de-ano, general
-   */
   trackingSection?: TrackingSection;
+  serviceTag?: string;
 }
-
-const WHATSAPP_NUMBER = '+598096303705';
-const WHATSAPP_BASE_URL = `https://api.whatsapp.com/send/?phone=${encodeURIComponent(WHATSAPP_NUMBER)}&type=phone_number&app_absent=0`;
-const GMAIL_ADDRESS = 'facudasilvaa@gmail.com';
 
 const DEPARTAMENTOS = [
   'Montevideo',
@@ -64,12 +57,15 @@ const DEPARTAMENTOS = [
   'Treinta y Tres',
 ];
 
+type FormStatus = 'idle' | 'loading' | 'success' | 'error';
+
 export const SimpleContactForm = ({ 
   preselectedEventType, 
   showEventTypeSelector = true,
-  trackingSection = 'general'
+  trackingSection = 'general',
+  serviceTag
 }: SimpleContactFormProps) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formStatus, setFormStatus] = useState<FormStatus>('idle');
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
@@ -80,6 +76,9 @@ export const SimpleContactForm = ({
     fecha: '',
     mensaje: '',
   });
+
+  // Obtener el serviceTag basado en el trackingSection si no se proporciona
+  const effectiveServiceTag = serviceTag || getServiceTagFromTracking(trackingSection);
 
   useEffect(() => {
     if (preselectedEventType) {
@@ -94,7 +93,7 @@ export const SimpleContactForm = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent, contactMethod: 'whatsapp' | 'gmail') => {
+  const handleSubmit = async (e: React.FormEvent, contactMethod: 'whatsapp' | 'email') => {
     e.preventDefault();
 
     // Validation
@@ -107,7 +106,18 @@ export const SimpleContactForm = ({
       return;
     }
 
-    setIsSubmitting(true);
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: 'Email inválido',
+        description: 'Por favor ingresá un email válido.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setFormStatus('loading');
 
     try {
       // Save lead to database
@@ -128,7 +138,7 @@ export const SimpleContactForm = ({
 
       // Send confirmation email via edge function
       try {
-        await supabase.functions.invoke('send-confirmation', {
+        const emailResult = await supabase.functions.invoke('send-confirmation', {
           body: {
             nombre: formData.nombre,
             email: formData.email,
@@ -138,71 +148,102 @@ export const SimpleContactForm = ({
             invitados: formData.invitados,
             fecha: formData.fecha,
             mensaje: formData.mensaje,
+            serviceTag: effectiveServiceTag,
+            paginaOrigen: window.location.pathname,
           },
         });
+        console.log('Email sent result:', emailResult);
       } catch (emailError) {
         console.error('Error sending confirmation email:', emailError);
       }
 
-      // ============================================================
-      // GOOGLE ADS CONVERSION TRACKING
-      // Dispara la conversión correcta según la sección y canal
-      // ============================================================
+      // Track conversion
       const channel = contactMethod === 'whatsapp' ? 'wpp' : 'mail';
       trackConversion(trackingSection, channel);
 
       if (contactMethod === 'whatsapp') {
-        const message = `Hola, soy ${formData.nombre}. Quiero organizar un *${formData.tipoEvento}* ${formData.departamento ? `en ${formData.departamento}` : ''} para ${formData.invitados || 'cantidad a definir'} personas, el ${formData.fecha || 'fecha a definir'}. Mis datos de contacto son ${formData.telefono} / ${formData.email}. ${formData.mensaje ? `Mensaje adicional: ${formData.mensaje}` : ''}`;
-        const whatsappUrl = `${WHATSAPP_BASE_URL}&text=${encodeURIComponent(message)}`;
+        // Abrir WhatsApp con mensaje prellenado
+        const message = `Hola, soy ${formData.nombre}. Servicio: ${effectiveServiceTag}. Quiero organizar un *${formData.tipoEvento}* ${formData.departamento ? `en ${formData.departamento}` : ''} para ${formData.invitados || 'cantidad a definir'} personas, el ${formData.fecha || 'fecha a definir'}. Mis datos: ${formData.telefono} / ${formData.email}. ${formData.mensaje ? `Mensaje: ${formData.mensaje}` : ''}`;
+        const whatsappUrl = `${WHATSAPP_BASE_URL}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
-        toast({
-          title: '¡Mensaje enviado!',
-          description: 'Te redirigimos a WhatsApp para completar tu consulta.',
-        });
-      } else {
-        const subject = encodeURIComponent(`Consulta: ${formData.tipoEvento} - ${formData.nombre}`);
-        const body = encodeURIComponent(
-          `Hola,\n\nSoy ${formData.nombre} y quiero organizar un ${formData.tipoEvento}.\n\n` +
-          `Departamento: ${formData.departamento || 'A definir'}\n` +
-          `Cantidad de invitados: ${formData.invitados || 'A definir'}\n` +
-          `Fecha tentativa: ${formData.fecha || 'A definir'}\n\n` +
-          `${formData.mensaje ? `Mensaje adicional: ${formData.mensaje}\n\n` : ''}` +
-          `Mis datos de contacto:\n` +
-          `Teléfono: ${formData.telefono}\n` +
-          `Email: ${formData.email}\n\n` +
-          `Quedo a la espera de su respuesta.\n` +
-          `Saludos.`
-        );
-        const gmailUrl = `mailto:${GMAIL_ADDRESS}?subject=${subject}&body=${body}`;
-        window.location.href = gmailUrl;
-        toast({
-          title: '¡Abriendo correo!',
-          description: 'Se abrirá tu aplicación de correo para enviar el mensaje.',
-        });
       }
 
-      // Reset form
-      setFormData({
-        nombre: '',
-        email: '',
-        telefono: '',
-        tipoEvento: preselectedEventType || '',
-        departamento: '',
-        invitados: '',
-        fecha: '',
-        mensaje: '',
+      // Mostrar estado de éxito
+      setFormStatus('success');
+      
+      toast({
+        title: '¡Consulta enviada!',
+        description: 'Ya recibimos tu consulta. En breve nos comunicamos.',
       });
+
     } catch (err) {
       console.error('Error:', err);
+      setFormStatus('error');
       toast({
         title: 'Error',
         description: 'Hubo un problema al enviar tu consulta. Intentá nuevamente.',
         variant: 'destructive',
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
+
+  const handleWhatsAppAfterSubmit = () => {
+    const message = `Hola, soy ${formData.nombre}. Servicio: ${effectiveServiceTag}. Acabo de enviar un formulario y quisiera información sobre salones.`;
+    const whatsappUrl = `${WHATSAPP_BASE_URL}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const resetForm = () => {
+    setFormStatus('idle');
+    setFormData({
+      nombre: '',
+      email: '',
+      telefono: '',
+      tipoEvento: preselectedEventType || '',
+      departamento: '',
+      invitados: '',
+      fecha: '',
+      mensaje: '',
+    });
+  };
+
+  // Estado de éxito - Mostrar mensaje y opción de WhatsApp
+  if (formStatus === 'success') {
+    return (
+      <div className="text-center py-8 space-y-6">
+        <div className="flex justify-center">
+          <CheckCircle className="w-16 h-16 text-green-500" />
+        </div>
+        <div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">
+            ¡Gracias! Ya recibimos tu consulta.
+          </h3>
+          <p className="text-muted-foreground">
+            En breve nos comunicamos contigo.
+          </p>
+        </div>
+        
+        <div className="space-y-3">
+          <button
+            onClick={handleWhatsAppAfterSubmit}
+            className="w-full bg-[#25D366] text-white font-semibold px-6 py-4 rounded-lg transition-all duration-300 hover:bg-[#20bd5a] hover:shadow-lg flex items-center justify-center gap-2"
+          >
+            <Send className="w-5 h-5" />
+            Enviar también por WhatsApp
+          </button>
+          
+          <button
+            onClick={resetForm}
+            className="w-full btn-gold py-3"
+          >
+            Enviar otra consulta
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isLoading = formStatus === 'loading';
 
   return (
     <form className="space-y-5">
@@ -220,6 +261,7 @@ export const SimpleContactForm = ({
             className="w-full px-4 py-3 rounded-lg input-dark border"
             placeholder="Tu nombre completo"
             required
+            disabled={isLoading}
           />
         </div>
         <div>
@@ -235,6 +277,7 @@ export const SimpleContactForm = ({
             className="w-full px-4 py-3 rounded-lg input-dark border"
             placeholder="tu@email.com"
             required
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -253,6 +296,7 @@ export const SimpleContactForm = ({
             className="w-full px-4 py-3 rounded-lg input-dark border"
             placeholder="+598 99 123 456"
             required
+            disabled={isLoading}
           />
         </div>
         {showEventTypeSelector ? (
@@ -267,6 +311,7 @@ export const SimpleContactForm = ({
               onChange={handleChange}
               className="w-full px-4 py-3 rounded-lg input-dark border"
               required
+              disabled={isLoading}
             >
               <option value="">Seleccioná una opción</option>
               {EVENT_TYPE_OPTIONS.map((type) => (
@@ -302,6 +347,7 @@ export const SimpleContactForm = ({
             value={formData.departamento}
             onChange={handleChange}
             className="w-full px-4 py-3 rounded-lg input-dark border"
+            disabled={isLoading}
           >
             <option value="">Seleccioná un departamento</option>
             {DEPARTAMENTOS.map((depto) => (
@@ -323,6 +369,7 @@ export const SimpleContactForm = ({
             onChange={handleChange}
             className="w-full px-4 py-3 rounded-lg input-dark border"
             placeholder="Ej: 50-80 personas"
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -338,6 +385,7 @@ export const SimpleContactForm = ({
           value={formData.fecha}
           onChange={handleChange}
           className="w-full px-4 py-3 rounded-lg input-dark border"
+          disabled={isLoading}
         />
       </div>
 
@@ -353,47 +401,59 @@ export const SimpleContactForm = ({
           rows={3}
           className="w-full px-4 py-3 rounded-lg input-dark border resize-none"
           placeholder="Contanos más detalles sobre tu evento..."
+          disabled={isLoading}
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* 
-          BOTÓN WHATSAPP - TRACKING
-          ID: wpp-{trackingSection}
-          data-conversion-name: {trackingSection}_wpp
-        */}
         <button
           type="button"
           id={`wpp-${trackingSection}`}
           onClick={(e) => handleSubmit(e, 'whatsapp')}
-          disabled={isSubmitting}
+          disabled={isLoading}
           className="bg-[#25D366] text-white font-semibold px-6 py-4 rounded-lg transition-all duration-300 hover:bg-[#20bd5a] hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
           data-conversion-name={`${trackingSection}_wpp`}
           data-section={trackingSection}
           data-channel="whatsapp"
         >
-          <Send className="w-5 h-5" />
-          {isSubmitting ? 'Enviando...' : 'Contactar por WhatsApp'}
+          {isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Send className="w-5 h-5" />
+          )}
+          {isLoading ? 'Enviando...' : 'Contactar por WhatsApp'}
         </button>
-        {/* 
-          BOTÓN EMAIL - TRACKING
-          ID: mail-{trackingSection}
-          data-conversion-name: {trackingSection}_mail
-        */}
         <button
           type="button"
           id={`mail-${trackingSection}`}
-          onClick={(e) => handleSubmit(e, 'gmail')}
-          disabled={isSubmitting}
+          onClick={(e) => handleSubmit(e, 'email')}
+          disabled={isLoading}
           className="btn-gold flex items-center justify-center gap-2 py-4 disabled:opacity-50"
           data-conversion-name={`${trackingSection}_mail`}
           data-section={trackingSection}
           data-channel="email"
         >
-          <Mail className="w-5 h-5" />
-          {isSubmitting ? 'Enviando...' : 'Contactar por Email'}
+          {isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Mail className="w-5 h-5" />
+          )}
+          {isLoading ? 'Enviando...' : 'Contactar por Email'}
         </button>
       </div>
     </form>
   );
 };
+
+// Helper para obtener serviceTag desde trackingSection
+function getServiceTagFromTracking(trackingSection: TrackingSection): string {
+  const map: Record<string, string> = {
+    'casamientos': 'Casamientos',
+    'cumpleanos-privados': 'Cumpleaños',
+    'cumpleanos-infantiles': 'Cumpleaños infantiles',
+    'eventos-empresariales': 'Eventos empresariales',
+    'despedidas-de-ano': 'Despedidas de año',
+    'general': 'Home',
+  };
+  return map[trackingSection] || 'Home';
+}

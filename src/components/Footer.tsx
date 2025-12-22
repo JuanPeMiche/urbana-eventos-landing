@@ -1,10 +1,10 @@
 import { Phone, Mail, MapPin, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const WHATSAPP_URL = 'https://api.whatsapp.com/send/?phone=%2B59897979905&text&type=phone_number&app_absent=0';
+import { CONTACT_PHONE_DISPLAY, CONTACT_EMAIL, getWhatsAppUrl } from '@/lib/contactConstants';
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const whatsappUrl = getWhatsAppUrl('Footer');
 
   return (
     <footer className="bg-background border-t border-border py-12">
@@ -54,22 +54,22 @@ export const Footer = () => {
             <ul className="space-y-3">
               <li>
                 <a
-                  href={WHATSAPP_URL}
+                  href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
                 >
                   <Phone className="w-4 h-4" />
-                  +598 97 979 905
+                  {CONTACT_PHONE_DISPLAY}
                 </a>
               </li>
               <li>
                 <a
-                  href="mailto:afrutos.seguridad@gmail.com"
+                  href={`mailto:${CONTACT_EMAIL}`}
                   className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
                 >
                   <Mail className="w-4 h-4" />
-                  afrutos.seguridad@gmail.com
+                  {CONTACT_EMAIL}
                 </a>
               </li>
               <li className="flex items-center gap-2 text-muted-foreground text-sm">
