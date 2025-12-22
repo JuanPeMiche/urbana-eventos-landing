@@ -18,6 +18,8 @@ interface LeadEmailRequest {
   invitados?: string;
   fecha?: string;
   mensaje?: string;
+  serviceTag?: string;
+  paginaOrigen?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -30,11 +32,22 @@ const handler = async (req: Request): Promise<Response> => {
     const data: LeadEmailRequest = await req.json();
     console.log("Received lead data:", data);
 
+    const serviceTag = data.serviceTag || data.tipoEvento || 'General';
+    const paginaOrigen = data.paginaOrigen || 'No especificada';
+    const timestamp = new Date().toLocaleString('es-UY', { 
+      timeZone: 'America/Montevideo',
+      dateStyle: 'full',
+      timeStyle: 'medium'
+    });
+
+    // WhatsApp link para responder al cliente
+    const whatsappLink = `https://wa.me/${data.telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${data.nombre}, soy de Urbana Eventos. Recibimos tu consulta sobre ${serviceTag}. `)}`;
+
     // Send confirmation email to the lead
     const confirmationEmail = await resend.emails.send({
       from: "Urbana Eventos <onboarding@resend.dev>",
       to: [data.email],
-      subject: "¡Recibimos tu consulta! - Urbana Eventos",
+      subject: `¡Recibimos tu consulta! - ${serviceTag} - Urbana Eventos`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -60,6 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
                 
                 <div style="background-color: #242424; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #c9a553;">
                   <h3 style="color: #c9a553; margin-top: 0; font-size: 18px;">Resumen de tu consulta:</h3>
+                  <p style="color: #b0b0b0; margin: 8px 0;"><strong style="color: #e0e0e0;">Servicio:</strong> ${serviceTag}</p>
                   <p style="color: #b0b0b0; margin: 8px 0;"><strong style="color: #e0e0e0;">Tipo de evento:</strong> ${data.tipoEvento}</p>
                   ${data.departamento ? `<p style="color: #b0b0b0; margin: 8px 0;"><strong style="color: #e0e0e0;">Departamento:</strong> ${data.departamento}</p>` : ''}
                   ${data.invitados ? `<p style="color: #b0b0b0; margin: 8px 0;"><strong style="color: #e0e0e0;">Cantidad de invitados:</strong> ${data.invitados}</p>` : ''}
@@ -72,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </p>
                 
                 <div style="text-align: center; margin-top: 30px;">
-                  <a href="https://api.whatsapp.com/send/?phone=%2B59897979905&text=Hola,%20hice%20una%20consulta%20por%20el%20formulario&type=phone_number&app_absent=0" 
+                  <a href="https://wa.me/59897979905?text=Hola,%20hice%20una%20consulta%20por%20el%20formulario%20sobre%20${encodeURIComponent(serviceTag)}" 
                      style="display: inline-block; background: linear-gradient(135deg, #c9a553, #d4b366); color: #141414; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                     Contactar por WhatsApp
                   </a>
@@ -97,11 +111,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Confirmation email sent:", confirmationEmail);
 
-    // Send notification email to the business
+    // Send notification email to the business with serviceTag in subject
     const notificationEmail = await resend.emails.send({
       from: "Urbana Eventos <onboarding@resend.dev>",
       to: ["afrutos.seguridad@gmail.com"],
-      subject: `Nueva consulta: ${data.tipoEvento} - ${data.nombre}`,
+      subject: `[Urbana Eventos] Lead - ${serviceTag}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -110,55 +124,76 @@ const handler = async (req: Request): Promise<Response> => {
         </head>
         <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
           <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h1 style="color: #c9a553; margin-top: 0;">Nueva consulta recibida</h1>
+            <div style="background: #c9a553; color: #141414; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <h1 style="margin: 0; font-size: 20px;">Nueva consulta - ${serviceTag}</h1>
+            </div>
             
             <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; width: 150px;">Nombre:</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">${data.nombre}</td>
+              <tr style="background-color: #f8f8f8;">
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; width: 150px;">Servicio:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #c9a553; font-weight: bold;">${serviceTag}</td>
               </tr>
               <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Email:</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="mailto:${data.email}">${data.email}</a></td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Página origen:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${paginaOrigen}</td>
+              </tr>
+              <tr style="background-color: #f8f8f8;">
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Nombre:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${data.nombre}</td>
               </tr>
               <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Teléfono:</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="tel:${data.telefono}">${data.telefono}</a></td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Teléfono:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;"><a href="tel:${data.telefono}" style="color: #333;">${data.telefono}</a></td>
+              </tr>
+              <tr style="background-color: #f8f8f8;">
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Email:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;"><a href="mailto:${data.email}" style="color: #333;">${data.email}</a></td>
               </tr>
               <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo de evento:</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">${data.tipoEvento}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo de evento:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${data.tipoEvento}</td>
               </tr>
               ${data.departamento ? `
-              <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Departamento:</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">${data.departamento}</td>
+              <tr style="background-color: #f8f8f8;">
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Departamento:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${data.departamento}</td>
               </tr>
               ` : ''}
               ${data.invitados ? `
               <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Invitados:</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">${data.invitados}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Invitados:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${data.invitados}</td>
               </tr>
               ` : ''}
               ${data.fecha ? `
-              <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Fecha:</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">${data.fecha}</td>
+              <tr style="background-color: #f8f8f8;">
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Fecha:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${data.fecha}</td>
               </tr>
               ` : ''}
               ${data.mensaje ? `
               <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Mensaje:</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">${data.mensaje}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Mensaje:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${data.mensaje}</td>
               </tr>
               ` : ''}
+              <tr style="background-color: #f8f8f8;">
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">Fecha/hora:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${timestamp}</td>
+              </tr>
             </table>
             
-            <div style="margin-top: 20px; text-align: center;">
-              <a href="https://api.whatsapp.com/send/?phone=${encodeURIComponent(data.telefono)}&text=Hola%20${encodeURIComponent(data.nombre)},%20soy%20de%20Urbana%20Eventos.%20Recibimos%20tu%20consulta%20sobre%20${encodeURIComponent(data.tipoEvento)}&type=phone_number&app_absent=0" 
-                 style="display: inline-block; background-color: #25D366; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold;">
-                Responder por WhatsApp
+            <div style="margin-top: 25px; text-align: center;">
+              <a href="${whatsappLink}" 
+                 style="display: inline-block; background-color: #25D366; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                📱 Responder por WhatsApp
+              </a>
+            </div>
+            
+            <div style="margin-top: 15px; text-align: center;">
+              <a href="mailto:${data.email}?subject=Re: Consulta sobre ${serviceTag} - Urbana Eventos" 
+                 style="display: inline-block; background-color: #c9a553; color: #141414; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold;">
+                ✉️ Responder por Email
               </a>
             </div>
           </div>
