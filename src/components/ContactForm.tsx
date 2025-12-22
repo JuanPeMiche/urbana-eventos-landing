@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Send, Mail, CheckCircle, Loader2 } from 'lucide-react';
 import { EventType } from './ServicesSection';
 import { toast } from '@/hooks/use-toast';
@@ -47,8 +47,65 @@ const DEPARTAMENTOS = [
 
 type FormStatus = 'idle' | 'loading' | 'success' | 'error';
 
+interface FieldErrors {
+  email?: string;
+  telefono?: string;
+  invitados?: string;
+  fecha?: string;
+}
+
+// Funciones de validación
+const validateEmail = (email: string): string | undefined => {
+  if (!email) return undefined;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    return 'Ingresá un email válido (ej: tu@email.com)';
+  }
+  return undefined;
+};
+
+const validatePhone = (phone: string): string | undefined => {
+  if (!phone) return undefined;
+  const phoneDigits = phone.replace(/[^0-9]/g, '');
+  if (phoneDigits.length < 8 || !/^[+\d\s()-]+$/.test(phone)) {
+    return 'Ingresá un teléfono válido (ej: +598 99 123 456)';
+  }
+  return undefined;
+};
+
+const validateInvitados = (invitados: string): string | undefined => {
+  if (!invitados) return undefined;
+  if (/[a-zA-Z]/.test(invitados)) {
+    return 'Solo se permiten números';
+  }
+  const num = parseInt(invitados.replace(/[^0-9]/g, ''), 10);
+  if (isNaN(num) || num <= 0) {
+    return 'Ingresá un número positivo';
+  }
+  return undefined;
+};
+
+const validateFecha = (fecha: string): string | undefined => {
+  if (!fecha) return undefined;
+  const selectedDate = new Date(fecha);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (selectedDate <= today) {
+    return 'La fecha debe ser posterior a hoy';
+  }
+  return undefined;
+};
+
+// Obtener fecha mínima (mañana)
+const getMinDate = (): string => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().split('T')[0];
+};
+
 export const ContactForm = ({ selectedEventType, trackingSection = 'general', serviceTag = 'Home' }: ContactFormProps) => {
   const [formStatus, setFormStatus] = useState<FormStatus>('idle');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
@@ -59,6 +116,8 @@ export const ContactForm = ({ selectedEventType, trackingSection = 'general', se
     fecha: '',
     mensaje: '',
   });
+
+  const minDate = useMemo(() => getMinDate(), []);
 
   useEffect(() => {
     if (selectedEventType) {
@@ -71,6 +130,25 @@ export const ContactForm = ({ selectedEventType, trackingSection = 'general', se
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Validación en tiempo real
+    let error: string | undefined;
+    switch (name) {
+      case 'email':
+        error = validateEmail(value);
+        break;
+      case 'telefono':
+        error = validatePhone(value);
+        break;
+      case 'invitados':
+        error = validateInvitados(value);
+        break;
+      case 'fecha':
+        error = validateFecha(value);
+        break;
+    }
+    
+    setFieldErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const handleSubmit = async (e: React.FormEvent, contactMethod: 'whatsapp' | 'email') => {
@@ -86,54 +164,29 @@ export const ContactForm = ({ selectedEventType, trackingSection = 'general', se
       return;
     }
 
-    // Validar formato de email (debe tener @ y dominio válido)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(formData.email)) {
+    // Validar todos los campos
+    const emailError = validateEmail(formData.email);
+    const phoneError = validatePhone(formData.telefono);
+    const invitadosError = validateInvitados(formData.invitados);
+    const fechaError = validateFecha(formData.fecha);
+
+    const errors: FieldErrors = {
+      email: emailError,
+      telefono: phoneError,
+      invitados: invitadosError,
+      fecha: fechaError,
+    };
+
+    setFieldErrors(errors);
+
+    // Si hay errores, mostrar toast y no enviar
+    if (emailError || phoneError || invitadosError || fechaError) {
       toast({
-        title: 'Email inválido',
-        description: 'Por favor ingresá un email válido (ej: tu@email.com).',
+        title: 'Corregí los errores',
+        description: 'Hay campos con errores. Revisá los mensajes en rojo.',
         variant: 'destructive',
       });
       return;
-    }
-
-    // Validar formato de teléfono (solo números, espacios y + permitidos, mínimo 8 dígitos)
-    const phoneDigits = formData.telefono.replace(/[^0-9]/g, '');
-    if (phoneDigits.length < 8 || !/^[+\d\s()-]+$/.test(formData.telefono)) {
-      toast({
-        title: 'Teléfono inválido',
-        description: 'Por favor ingresá un teléfono válido (ej: +598 99 123 456).',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validar cantidad de invitados (solo números positivos si se ingresa)
-    if (formData.invitados) {
-      const invitadosNum = parseInt(formData.invitados.replace(/[^0-9]/g, ''), 10);
-      if (isNaN(invitadosNum) || invitadosNum <= 0 || /[a-zA-Z]/.test(formData.invitados.replace(/[-\s]/g, ''))) {
-        toast({
-          title: 'Cantidad de invitados inválida',
-          description: 'Por favor ingresá solo números positivos.',
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
-    // Validar fecha (debe ser mayor a la fecha actual)
-    if (formData.fecha) {
-      const selectedDate = new Date(formData.fecha);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (selectedDate <= today) {
-        toast({
-          title: 'Fecha inválida',
-          description: 'La fecha del evento debe ser posterior a hoy.',
-          variant: 'destructive',
-        });
-        return;
-      }
     }
 
     setFormStatus('loading');
@@ -206,14 +259,9 @@ export const ContactForm = ({ selectedEventType, trackingSection = 'general', se
     }
   };
 
-  const handleWhatsAppAfterSubmit = () => {
-    const message = `Hola, soy ${formData.nombre}. Servicio: ${serviceTag}. Acabo de enviar un formulario y quisiera información sobre salones.`;
-    const whatsappUrl = `${WHATSAPP_BASE_URL}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
   const resetForm = () => {
     setFormStatus('idle');
+    setFieldErrors({});
     setFormData({
       nombre: '',
       email: '',
@@ -283,11 +331,14 @@ export const ContactForm = ({ selectedEventType, trackingSection = 'general', se
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-lg input-dark border"
+            className={`w-full px-4 py-3 rounded-lg input-dark border ${fieldErrors.email ? 'border-red-500' : ''}`}
             placeholder="tu@email.com"
             required
             disabled={isLoading}
           />
+          {fieldErrors.email && (
+            <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
+          )}
         </div>
       </div>
 
@@ -302,11 +353,14 @@ export const ContactForm = ({ selectedEventType, trackingSection = 'general', se
             name="telefono"
             value={formData.telefono}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-lg input-dark border"
+            className={`w-full px-4 py-3 rounded-lg input-dark border ${fieldErrors.telefono ? 'border-red-500' : ''}`}
             placeholder="+598 99 123 456"
             required
             disabled={isLoading}
           />
+          {fieldErrors.telefono && (
+            <p className="text-red-500 text-xs mt-1">{fieldErrors.telefono}</p>
+          )}
         </div>
         <div>
           <label htmlFor="tipoEvento" className="block text-sm font-medium text-foreground mb-1">
@@ -357,15 +411,19 @@ export const ContactForm = ({ selectedEventType, trackingSection = 'general', se
             Cantidad estimada de invitados
           </label>
           <input
-            type="text"
+            type="number"
             id="invitados"
             name="invitados"
             value={formData.invitados}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-lg input-dark border"
-            placeholder="Ej: 50-80 personas"
+            min="1"
+            className={`w-full px-4 py-3 rounded-lg input-dark border ${fieldErrors.invitados ? 'border-red-500' : ''}`}
+            placeholder="Ej: 50"
             disabled={isLoading}
           />
+          {fieldErrors.invitados && (
+            <p className="text-red-500 text-xs mt-1">{fieldErrors.invitados}</p>
+          )}
         </div>
       </div>
 
@@ -379,9 +437,13 @@ export const ContactForm = ({ selectedEventType, trackingSection = 'general', se
           name="fecha"
           value={formData.fecha}
           onChange={handleChange}
-          className="w-full px-4 py-3 rounded-lg input-dark border"
+          min={minDate}
+          className={`w-full px-4 py-3 rounded-lg input-dark border ${fieldErrors.fecha ? 'border-red-500' : ''}`}
           disabled={isLoading}
         />
+        {fieldErrors.fecha && (
+          <p className="text-red-500 text-xs mt-1">{fieldErrors.fecha}</p>
+        )}
       </div>
 
       <div>
