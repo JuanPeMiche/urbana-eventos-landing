@@ -96,7 +96,7 @@ export const SimpleContactForm = ({
   const handleSubmit = async (e: React.FormEvent, contactMethod: 'whatsapp' | 'email') => {
     e.preventDefault();
 
-    // Validation
+    // Validation - campos requeridos
     if (!formData.nombre || !formData.email || !formData.telefono || !formData.tipoEvento) {
       toast({
         title: 'Campos requeridos',
@@ -106,15 +106,54 @@ export const SimpleContactForm = ({
       return;
     }
 
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Validar formato de email (debe tener @ y dominio válido)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(formData.email)) {
       toast({
         title: 'Email inválido',
-        description: 'Por favor ingresá un email válido.',
+        description: 'Por favor ingresá un email válido (ej: tu@email.com).',
         variant: 'destructive',
       });
       return;
+    }
+
+    // Validar formato de teléfono (solo números, espacios y + permitidos, mínimo 8 dígitos)
+    const phoneDigits = formData.telefono.replace(/[^0-9]/g, '');
+    if (phoneDigits.length < 8 || !/^[+\d\s()-]+$/.test(formData.telefono)) {
+      toast({
+        title: 'Teléfono inválido',
+        description: 'Por favor ingresá un teléfono válido (ej: +598 99 123 456).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validar cantidad de invitados (solo números positivos si se ingresa)
+    if (formData.invitados) {
+      const invitadosNum = parseInt(formData.invitados.replace(/[^0-9]/g, ''), 10);
+      if (isNaN(invitadosNum) || invitadosNum <= 0 || /[a-zA-Z]/.test(formData.invitados.replace(/[-\s]/g, ''))) {
+        toast({
+          title: 'Cantidad de invitados inválida',
+          description: 'Por favor ingresá solo números positivos.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    // Validar fecha (debe ser mayor a la fecha actual)
+    if (formData.fecha) {
+      const selectedDate = new Date(formData.fecha);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate <= today) {
+        toast({
+          title: 'Fecha inválida',
+          description: 'La fecha del evento debe ser posterior a hoy.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setFormStatus('loading');
