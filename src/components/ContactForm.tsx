@@ -203,22 +203,12 @@ export const ContactForm = ({ selectedEventType, trackingSection = 'general', se
           </p>
         </div>
         
-        <div className="space-y-3">
-          <button
-            onClick={handleWhatsAppAfterSubmit}
-            className="w-full bg-[#25D366] text-white font-semibold px-6 py-4 rounded-lg transition-all duration-300 hover:bg-[#20bd5a] hover:shadow-lg flex items-center justify-center gap-2"
-          >
-            <Send className="w-5 h-5" />
-            Enviar también por WhatsApp
-          </button>
-          
-          <button
-            onClick={resetForm}
-            className="w-full btn-gold py-3"
-          >
-            Enviar otra consulta
-          </button>
-        </div>
+        <button
+          onClick={resetForm}
+          className="w-full btn-gold py-3"
+        >
+          Enviar otra consulta
+        </button>
       </div>
     );
   }
