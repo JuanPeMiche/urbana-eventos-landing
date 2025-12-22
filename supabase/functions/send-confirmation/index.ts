@@ -45,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send confirmation email to the lead
     const confirmationEmail = await resend.emails.send({
-      from: "Urbana Eventos <onboarding@resend.dev>",
+      from: "Urbana Eventos <no-reply@urbanaeventos.uy>",
       to: [data.email],
       subject: `¡Recibimos tu consulta! - ${serviceTag} - Urbana Eventos`,
       html: `
@@ -113,7 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send notification email to the business with serviceTag in subject
     const notificationEmail = await resend.emails.send({
-      from: "Urbana Eventos <onboarding@resend.dev>",
+      from: "Urbana Eventos <no-reply@urbanaeventos.uy>",
       to: ["afrutos.seguridad@gmail.com"],
       subject: `[Urbana Eventos] Lead - ${serviceTag}`,
       html: `
