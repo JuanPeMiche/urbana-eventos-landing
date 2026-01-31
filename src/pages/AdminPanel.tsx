@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, Eye, Upload, Trash2, Image as ImageIcon, Users, RefreshCw, FileText, LogOut, Lock, Loader2, Layers, AlertCircle } from 'lucide-react';
+import { Save, Eye, Upload, Trash2, Image as ImageIcon, Users, RefreshCw, FileText, LogOut, Lock, Loader2, Layers, AlertCircle, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { SortableImageCard } from '@/components/admin/SortableImageCard';
+import { Switch } from '@/components/ui/switch';
 
 // Credenciales hardcodeadas del administrador
 const ADMIN_USERNAME = 'adminUrbana';
 const ADMIN_PASSWORD = '#UrbanaEventos2025';
+
 interface GalleryImage {
   id: string;
   title: string;
@@ -39,6 +41,17 @@ interface SiteContent {
   id: string;
   content: string;
 }
+
+interface TrackingConfig {
+  id: string;
+  enabled: boolean;
+  ads_id: string;
+  event_label: string;
+  conversion_label: string | null;
+  track_form_submit: boolean;
+  track_whatsapp_click: boolean;
+}
+
 
 const contentLabels: Record<string, string> = {
   hero_title: 'Título Principal (Inicio)',
@@ -99,19 +112,23 @@ const AdminPanel = () => {
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'content' | 'gallery' | 'services' | 'leads'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'gallery' | 'services' | 'leads' | 'tracking'>('content');
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [serviceImages, setServiceImages] = useState<GalleryImage[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [siteContent, setSiteContent] = useState<SiteContent[]>([]);
+  const [trackingConfigs, setTrackingConfigs] = useState<TrackingConfig[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingService, setIsUploadingService] = useState(false);
   const [newImageTitle, setNewImageTitle] = useState('');
   const [newServiceImageTitle, setNewServiceImageTitle] = useState('');
   const [selectedServiceCategory, setSelectedServiceCategory] = useState('cumpleanos');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingTracking, setIsSavingTracking] = useState(false);
   const [isLoadingGallery, setIsLoadingGallery] = useState(false);
   const [isLoadingServices, setIsLoadingServices] = useState(false);
+  const [isLoadingTracking, setIsLoadingTracking] = useState(false);
+
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -147,6 +164,7 @@ const AdminPanel = () => {
       fetchServiceImages();
       fetchLeads();
       fetchSiteContent();
+      fetchTrackingConfigs();
     }
   }, [isLoggedIn]);
 
@@ -264,6 +282,71 @@ const AdminPanel = () => {
     if (!error && data) {
       setSiteContent(data);
     }
+  };
+
+  // Tracking config functions
+  const fetchTrackingConfigs = async () => {
+    setIsLoadingTracking(true);
+    try {
+      const { data, error } = await supabase
+        .from('tracking_config')
+        .select('*')
+        .order('id');
+      
+      if (error) throw error;
+      setTrackingConfigs((data || []) as TrackingConfig[]);
+    } catch (err) {
+      console.error('Error fetching tracking configs:', err);
+    } finally {
+      setIsLoadingTracking(false);
+    }
+  };
+
+  const handleTrackingChange = (id: string, field: keyof TrackingConfig, value: any) => {
+    setTrackingConfigs(prev =>
+      prev.map(config => config.id === id ? { ...config, [field]: value } : config)
+    );
+  };
+
+  const saveTrackingConfig = async (config: TrackingConfig) => {
+    setIsSavingTracking(true);
+    try {
+      const { error } = await supabase
+        .from('tracking_config')
+        .upsert({
+          id: config.id,
+          enabled: config.enabled,
+          ads_id: config.ads_id,
+          event_label: config.event_label,
+          conversion_label: config.conversion_label,
+          track_form_submit: config.track_form_submit,
+          track_whatsapp_click: config.track_whatsapp_click,
+          updated_at: new Date().toISOString(),
+        });
+      
+      if (error) throw error;
+      toast({ title: 'Tracking guardado', description: `Configuración de ${config.id} actualizada.` });
+    } catch (err: any) {
+      console.error('Error saving tracking:', err);
+      toast({ title: 'Error', description: 'No se pudo guardar la configuración.', variant: 'destructive' });
+    } finally {
+      setIsSavingTracking(false);
+    }
+  };
+
+  const createTrackingConfig = async (sectionId: string) => {
+    const newConfig: TrackingConfig = {
+      id: sectionId,
+      enabled: false,
+      ads_id: 'AW-XXXXXXXXXX',
+      event_label: `${sectionId}_form_submit`,
+      conversion_label: null,
+      track_form_submit: true,
+      track_whatsapp_click: true,
+    };
+    
+    setTrackingConfigs(prev => [...prev, newConfig]);
+    await saveTrackingConfig(newConfig);
   };
 
   const handleContentChange = (id: string, newContent: string) => {
@@ -624,6 +707,16 @@ const AdminPanel = () => {
               }`}
             >
               <Users className="w-4 h-4" /> Leads ({leads.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('tracking')}
+              className={`py-4 px-2 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'tracking'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" /> Tracking
             </button>
           </div>
         </div>
@@ -1118,6 +1211,175 @@ const AdminPanel = () => {
             {leads.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 No hay consultas registradas aún.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tracking Tab */}
+        {activeTab === 'tracking' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="font-playfair text-xl font-semibold text-primary">Google Ads Tracking</h2>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Configurá el tracking de conversiones para cada sección del sitio
+                </p>
+              </div>
+              <button
+                onClick={fetchTrackingConfigs}
+                disabled={isLoadingTracking}
+                className="btn-gold-outline text-sm flex items-center gap-2"
+              >
+                {isLoadingTracking ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Actualizar
+              </button>
+            </div>
+
+            {/* Info Card */}
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                ¿Cómo funciona?
+              </h3>
+              <div className="text-muted-foreground text-sm space-y-2">
+                <p>• El script de Google Ads se carga <strong>únicamente</strong> en las páginas con tracking habilitado.</p>
+                <p>• Las conversiones se disparan automáticamente cuando un usuario envía el formulario o hace clic en WhatsApp.</p>
+                <p>• Los cambios se aplican inmediatamente sin necesidad de redesplegar el sitio.</p>
+              </div>
+            </div>
+
+            {/* Loading State */}
+            {isLoadingTracking && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Cargando configuración...</span>
+              </div>
+            )}
+
+            {/* Infantiles Config - Main Section */}
+            {!isLoadingTracking && (
+              <div className="space-y-4">
+                {/* Infantiles - Active */}
+                {trackingConfigs.filter(c => c.id === 'cumpleanos-infantiles').map(config => (
+                  <div key={config.id} className="bg-card border border-border rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">🎈</span>
+                        <div>
+                          <h3 className="font-semibold text-foreground">Cumpleaños Infantiles</h3>
+                          <p className="text-muted-foreground text-sm">/cumpleanos-infantiles, /infantiles</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-sm font-medium ${config.enabled ? 'text-green-500' : 'text-muted-foreground'}`}>
+                          {config.enabled ? 'Activo' : 'Inactivo'}
+                        </span>
+                        <Switch
+                          checked={config.enabled}
+                          onCheckedChange={(checked) => handleTrackingChange(config.id, 'enabled', checked)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">
+                          Google Ads ID
+                        </label>
+                        <input
+                          type="text"
+                          value={config.ads_id}
+                          onChange={(e) => handleTrackingChange(config.id, 'ads_id', e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg input-dark border font-mono text-sm"
+                          placeholder="AW-16577812369"
+                        />
+                        <p className="text-muted-foreground text-xs mt-1">ID de tu cuenta de Google Ads</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">
+                          Event Label
+                        </label>
+                        <input
+                          type="text"
+                          value={config.event_label}
+                          onChange={(e) => handleTrackingChange(config.id, 'event_label', e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg input-dark border"
+                          placeholder="infantiles_form_submit"
+                        />
+                        <p className="text-muted-foreground text-xs mt-1">Etiqueta para identificar la conversión</p>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">
+                          Conversion Label (opcional)
+                        </label>
+                        <input
+                          type="text"
+                          value={config.conversion_label || ''}
+                          onChange={(e) => handleTrackingChange(config.id, 'conversion_label', e.target.value || null)}
+                          className="w-full px-4 py-3 rounded-lg input-dark border font-mono text-sm"
+                          placeholder="AbCdEfGhIjKlMn"
+                        />
+                        <p className="text-muted-foreground text-xs mt-1">Label específico de la acción de conversión (si aplica)</p>
+                      </div>
+                      <div className="flex flex-col justify-end gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={config.track_form_submit}
+                            onChange={(e) => handleTrackingChange(config.id, 'track_form_submit', e.target.checked)}
+                            className="rounded border-border"
+                          />
+                          <span className="text-sm text-foreground">Trackear envío de formulario</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={config.track_whatsapp_click}
+                            onChange={(e) => handleTrackingChange(config.id, 'track_whatsapp_click', e.target.checked)}
+                            className="rounded border-border"
+                          />
+                          <span className="text-sm text-foreground">Trackear clic en WhatsApp</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => saveTrackingConfig(config)}
+                        disabled={isSavingTracking}
+                        className="btn-gold flex items-center gap-2"
+                      >
+                        {isSavingTracking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Guardar cambios
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* No configs for Infantiles yet */}
+                {trackingConfigs.filter(c => c.id === 'cumpleanos-infantiles').length === 0 && (
+                  <div className="bg-card border border-border rounded-xl p-6 text-center">
+                    <p className="text-muted-foreground mb-4">No hay configuración de tracking para Infantiles</p>
+                    <button
+                      onClick={() => createTrackingConfig('cumpleanos-infantiles')}
+                      className="btn-gold"
+                    >
+                      Crear configuración para Infantiles
+                    </button>
+                  </div>
+                )}
+
+                {/* Other sections placeholder */}
+                <div className="bg-muted/30 border border-border rounded-xl p-6">
+                  <h4 className="font-medium text-muted-foreground mb-2">Otras secciones (próximamente)</h4>
+                  <p className="text-muted-foreground text-sm">
+                    Podés agregar tracking para Casamientos, Empresariales, Despedidas de año, etc. cuando actives esas campañas.
+                  </p>
+                </div>
               </div>
             )}
           </div>

@@ -107,6 +107,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tracking_config: {
+        Row: {
+          ads_id: string
+          conversion_label: string | null
+          created_at: string
+          enabled: boolean
+          event_label: string
+          id: string
+          track_form_submit: boolean
+          track_whatsapp_click: boolean
+          updated_at: string
+        }
+        Insert: {
+          ads_id?: string
+          conversion_label?: string | null
+          created_at?: string
+          enabled?: boolean
+          event_label?: string
+          id: string
+          track_form_submit?: boolean
+          track_whatsapp_click?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ads_id?: string
+          conversion_label?: string | null
+          created_at?: string
+          enabled?: boolean
+          event_label?: string
+          id?: string
+          track_form_submit?: boolean
+          track_whatsapp_click?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
