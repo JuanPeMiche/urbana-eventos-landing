@@ -2,16 +2,21 @@ import { useEffect } from 'react';
 import { Building2, Users, MessageCircle, Baby, Shield, PartyPopper, Sparkles } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { WhatsAppFloat } from '@/components/WhatsAppFloat';
-import { SimpleContactForm } from '@/components/SimpleContactForm';
+import { WhatsAppFloatWithTracking } from '@/components/WhatsAppFloatWithTracking';
+import { SimpleContactFormWithTracking } from '@/components/SimpleContactFormWithTracking';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import { useServiceImage } from '@/hooks/useServiceImage';
+import { useGoogleAdsTracking } from '@/hooks/useGoogleAdsTracking';
 import eventInfantiles from '@/assets/event-infantiles.jpg';
 import heroBg from '@/assets/hero-bg.jpg';
 
 const CumpleanosInfantiles = () => {
   const { get } = useSiteContent();
   const { imageUrl } = useServiceImage('infantiles');
+
+  // Initialize Google Ads tracking for this section
+  // This loads the gtag script ONLY on this page when enabled in DB
+  const { isLoaded: trackingLoaded, isEnabled: trackingEnabled } = useGoogleAdsTracking('cumpleanos-infantiles');
 
   useEffect(() => {
     document.title = 'Salones para Cumpleaños Infantiles en Montevideo | Urbana Eventos';
@@ -20,6 +25,13 @@ const CumpleanosInfantiles = () => {
       metaDesc.setAttribute('content', 'Encontrá el salón perfecto para cumpleaños infantiles. Espacios seguros, divertidos y equipados para que los más chicos disfruten.');
     }
   }, []);
+
+  // Log tracking status (for debugging, can be removed in production)
+  useEffect(() => {
+    if (trackingLoaded) {
+      console.log(`[Infantiles] Google Ads tracking loaded: ${trackingEnabled ? 'ENABLED' : 'DISABLED'}`);
+    }
+  }, [trackingLoaded, trackingEnabled]);
 
   const benefits = [
     { icon: Building2, text: get('hero_benefit_1', 'Más de 10 salones a disposición') },
@@ -71,6 +83,8 @@ const CumpleanosInfantiles = () => {
             <button
               onClick={scrollToForm}
               className="btn-gold text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4"
+              data-track="google-ads"
+              data-track-label="infantiles_hero_cta"
             >
               Cotizar cumpleaños infantil
             </button>
@@ -141,10 +155,12 @@ const CumpleanosInfantiles = () => {
               </div>
               
               <div className="bg-background rounded-xl p-6 md:p-8 border border-border">
-                <SimpleContactForm 
+                {/* Form with dynamic Google Ads tracking enabled */}
+                <SimpleContactFormWithTracking 
                   preselectedEventType="Cumpleaños infantil" 
                   showEventTypeSelector={false} 
                   trackingSection="cumpleanos-infantiles"
+                  enableDynamicTracking={true}
                 />
               </div>
             </div>
@@ -152,7 +168,11 @@ const CumpleanosInfantiles = () => {
         </section>
       </main>
       <Footer />
-      <WhatsAppFloat trackingSection="cumpleanos-infantiles" />
+      {/* WhatsApp float with dynamic Google Ads tracking enabled */}
+      <WhatsAppFloatWithTracking 
+        trackingSection="cumpleanos-infantiles" 
+        enableDynamicTracking={true}
+      />
     </>
   );
 };
