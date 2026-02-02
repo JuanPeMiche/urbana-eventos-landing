@@ -2,16 +2,20 @@ import { useEffect } from 'react';
 import { Building2, Users, MessageCircle, Heart, Sparkles, Camera, Music } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { WhatsAppFloat } from '@/components/WhatsAppFloat';
-import { SimpleContactForm } from '@/components/SimpleContactForm';
+import { WhatsAppFloatWithTracking } from '@/components/WhatsAppFloatWithTracking';
+import { SimpleContactFormWithTracking } from '@/components/SimpleContactFormWithTracking';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import { useServiceImage } from '@/hooks/useServiceImage';
+import { useGoogleAdsTracking } from '@/hooks/useGoogleAdsTracking';
 import eventWedding from '@/assets/event-wedding.jpg';
 import heroBg from '@/assets/hero-bg.jpg';
 
 const Casamientos = () => {
   const { get } = useSiteContent();
   const { imageUrl } = useServiceImage('casamientos');
+  
+  // Initialize Google Ads tracking for this section
+  useGoogleAdsTracking('casamientos');
 
   useEffect(() => {
     document.title = 'Salones para Casamientos y Bodas en Montevideo | Urbana Eventos';
@@ -141,10 +145,11 @@ const Casamientos = () => {
               </div>
               
               <div className="bg-background rounded-xl p-6 md:p-8 border border-border">
-                <SimpleContactForm 
+                <SimpleContactFormWithTracking 
                   preselectedEventType="Casamiento" 
                   showEventTypeSelector={false} 
                   trackingSection="casamientos"
+                  enableDynamicTracking={true}
                 />
               </div>
             </div>
@@ -152,7 +157,10 @@ const Casamientos = () => {
         </section>
       </main>
       <Footer />
-      <WhatsAppFloat trackingSection="casamientos" />
+      <WhatsAppFloatWithTracking 
+        trackingSection="casamientos" 
+        enableDynamicTracking={true}
+      />
     </>
   );
 };
