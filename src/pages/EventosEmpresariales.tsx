@@ -2,16 +2,20 @@ import { useEffect } from 'react';
 import { Building2, Users, MessageCircle, Briefcase, Presentation, Award, Coffee } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { WhatsAppFloat } from '@/components/WhatsAppFloat';
-import { SimpleContactForm } from '@/components/SimpleContactForm';
+import { WhatsAppFloatWithTracking } from '@/components/WhatsAppFloatWithTracking';
+import { SimpleContactFormWithTracking } from '@/components/SimpleContactFormWithTracking';
 import { useSiteContent } from '@/hooks/useSiteContent';
 import { useServiceImage } from '@/hooks/useServiceImage';
+import { useGoogleAdsTracking } from '@/hooks/useGoogleAdsTracking';
 import eventCorporate from '@/assets/event-corporate.jpg';
 import heroBg from '@/assets/hero-bg.jpg';
 
 const EventosEmpresariales = () => {
   const { get } = useSiteContent();
   const { imageUrl } = useServiceImage('empresariales');
+  
+  // Initialize Google Ads tracking for this section
+  useGoogleAdsTracking('eventos-empresariales');
 
   useEffect(() => {
     document.title = 'Salones para Eventos Empresariales en Montevideo | Urbana Eventos';
@@ -141,10 +145,11 @@ const EventosEmpresariales = () => {
               </div>
               
               <div className="bg-background rounded-xl p-6 md:p-8 border border-border">
-                <SimpleContactForm 
+                <SimpleContactFormWithTracking 
                   preselectedEventType="Fiesta empresarial" 
                   showEventTypeSelector={true} 
                   trackingSection="eventos-empresariales"
+                  enableDynamicTracking={true}
                 />
               </div>
             </div>
@@ -152,7 +157,10 @@ const EventosEmpresariales = () => {
         </section>
       </main>
       <Footer />
-      <WhatsAppFloat trackingSection="eventos-empresariales" />
+      <WhatsAppFloatWithTracking 
+        trackingSection="eventos-empresariales" 
+        enableDynamicTracking={true}
+      />
     </>
   );
 };
