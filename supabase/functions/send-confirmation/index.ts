@@ -86,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </p>
                 
                 <div style="text-align: center; margin-top: 30px;">
-                  <a href="https://wa.me/59897979905?text=Hola,%20hice%20una%20consulta%20por%20el%20formulario%20sobre%20${encodeURIComponent(serviceTag)}" 
+                  <a href="https://wa.me/59897250021?text=Hola,%20hice%20una%20consulta%20por%20el%20formulario%20sobre%20${encodeURIComponent(serviceTag)}" 
                      style="display: inline-block; background: linear-gradient(135deg, #c9a553, #d4b366); color: #141414; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                     Contactar por WhatsApp
                   </a>
@@ -99,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
                   Urbana Eventos - Gestión de salones y eventos
                 </p>
                 <p style="color: #666; font-size: 12px; margin: 10px 0 0;">
-                  Montevideo, Uruguay | +598 97 979 905
+                  Montevideo, Uruguay | +598 97 250 021
                 </p>
               </div>
             </div>
@@ -114,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send notification email to the business with serviceTag in subject
     const notificationEmail = await resend.emails.send({
       from: "Urbana Eventos <no-reply@urbanaeventos.uy>",
-      to: ["afrutos.seguridad@gmail.com"],
+      to: ["urbanaeventosuy@gmail.com"],
       subject: `[Urbana Eventos] Lead - ${serviceTag}`,
       html: `
         <!DOCTYPE html>
