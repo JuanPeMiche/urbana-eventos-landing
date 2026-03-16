@@ -99,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
                   Urbana Eventos - Gestión de salones y eventos
                 </p>
                 <p style="color: #666; font-size: 12px; margin: 10px 0 0;">
-                  Montevideo, Uruguay | +598 97 979 905
+                  Montevideo, Uruguay | +598 97 250 021
                 </p>
               </div>
             </div>
