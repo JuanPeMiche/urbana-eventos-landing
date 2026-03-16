@@ -86,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </p>
                 
                 <div style="text-align: center; margin-top: 30px;">
-                  <a href="https://wa.me/59897979905?text=Hola,%20hice%20una%20consulta%20por%20el%20formulario%20sobre%20${encodeURIComponent(serviceTag)}" 
+                  <a href="https://wa.me/59897250021?text=Hola,%20hice%20una%20consulta%20por%20el%20formulario%20sobre%20${encodeURIComponent(serviceTag)}" 
                      style="display: inline-block; background: linear-gradient(135deg, #c9a553, #d4b366); color: #141414; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                     Contactar por WhatsApp
                   </a>
