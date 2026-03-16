@@ -114,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send notification email to the business with serviceTag in subject
     const notificationEmail = await resend.emails.send({
       from: "Urbana Eventos <no-reply@urbanaeventos.uy>",
-      to: ["afrutos.seguridad@gmail.com"],
+      to: ["urbanaeventosuy@gmail.com"],
       subject: `[Urbana Eventos] Lead - ${serviceTag}`,
       html: `
         <!DOCTYPE html>

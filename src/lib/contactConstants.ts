@@ -10,9 +10,9 @@
 // ============================================================
 // DATOS DE CONTACTO - MODIFICAR AQUÍ PARA ACTUALIZAR TODO EL SITIO
 // ============================================================
-export const CONTACT_PHONE = '59897979905';
-export const CONTACT_PHONE_DISPLAY = '+598 97 979 905';
-export const CONTACT_EMAIL = 'afrutos.seguridad@gmail.com';
+export const CONTACT_PHONE = '59897250021';
+export const CONTACT_PHONE_DISPLAY = '+598 97 250 021';
+export const CONTACT_EMAIL = 'urbanaeventosuy@gmail.com';
 
 // URLs de WhatsApp
 export const WHATSAPP_BASE_URL = `https://wa.me/${CONTACT_PHONE}`;
